@@ -1,11 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'landing_page.dart';
 
-void main() => runApp(const PetengApp());
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Konten menempel sampai tepi layar (di bawah status bar & navigation bar).
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness:
+          Brightness.light, // ikon putih di atas header biru
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarIconBrightness: Brightness.dark,
+      systemNavigationBarContrastEnforced: false,
+    ),
+  );
+  runApp(const PetengApp());
+}
 
 class AppColors {
-  static const brand = Color(0x172554);
+  static const brand = Color(0xFF172554);
   static const brandSoft = Color(0xFF46507A); // lingkaran dekorasi
   static const page = Color(0xFFCDC8D0);
   static const card = Color(0xFFF1F1EF);
@@ -13,10 +28,8 @@ class AppColors {
   static const glow = Color(0xFFE8D98A);
 }
 
-/// Path logo kamu. Taruh file di assets/logo.png dan daftarkan di pubspec.yaml.
-const String kLogoAsset = 'assets/logo.png';
+const String kLogoAsset = 'lib/assets/images/logo_bulet.png';
 
-/// Set false setelah logo terpasang untuk menghilangkan outline penanda.
 const bool kShowLogoMarker = true;
 
 class PetengApp extends StatelessWidget {
@@ -31,7 +44,7 @@ class PetengApp extends StatelessWidget {
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: AppColors.brand),
         textTheme: GoogleFonts.poppinsTextTheme(),
-        scaffoldBackgroundColor: AppColors.page,
+        scaffoldBackgroundColor: AppColors.card,
       ),
       home: const LoginPage(),
     );
@@ -67,61 +80,63 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  static const double _maxW = 420;
+
   @override
   Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    // Tinggi layar penuh (termasuk area status bar & nav bar) dan TIDAK
+    // berubah saat keyboard muncul.
+    final fullH = media.size.height;
+    final topInset = media.viewPadding.top;
+    final headerH = (fullH * 0.30).clamp(190.0, 290.0).toDouble() + topInset;
+
     return Scaffold(
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final cardHeight = (constraints.maxHeight - 32)
-                .clamp(740.0, 900.0)
-                .toDouble();
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Center(
+      backgroundColor: AppColors.card, // putih tulang di seluruh layar
+      resizeToAvoidBottomInset: true,
+      body: SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        child: SizedBox(
+          width: double.infinity,
+          child: Stack(
+            clipBehavior: Clip.hardEdge,
+            children: [
+              // Lingkaran dekorasi (ikut ter-scroll, tidak menimpa teks)
+              Positioned(
+                right: -55,
+                top: fullH * 0.70,
+                child: const _Dot(size: 110),
+              ),
+              const Positioned(left: -60, bottom: -60, child: _Dot(size: 150)),
+              Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 400),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(36),
-                    child: Container(
-                      height: cardHeight,
-                      color: AppColors.card,
-                      child: Stack(
+                  constraints: const BoxConstraints(maxWidth: _maxW),
+                  child: ConstrainedBox(
+                    // minimal setinggi layar; kalau isi lebih tinggi
+                    // (layar pendek / keyboard) tinggal di-scroll.
+                    constraints: BoxConstraints(minHeight: fullH),
+                    child: IntrinsicHeight(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Lingkaran dekorasi
-                          const Positioned(
-                            right: -60,
-                            top: 500,
-                            child: _Dot(size: 120),
-                          ),
-                          const Positioned(
-                            left: -76,
-                            bottom: -80,
-                            child: _Dot(size: 200),
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const _Header(),
-                              Expanded(child: _buildForm()),
-                            ],
-                          ),
+                          _Header(height: headerH, topInset: topInset),
+                          Expanded(child: _buildForm(media.viewPadding.bottom)),
                         ],
                       ),
                     ),
                   ),
                 ),
               ),
-            );
-          },
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildForm() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(28, 28, 28, 24),
+  Widget _buildForm(double bottomInset) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(28, 18, 28, 20 + bottomInset),
       child: Form(
         key: _formKey,
         child: Column(
@@ -142,7 +157,7 @@ class _LoginPageState extends State<LoginPage> {
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            const Spacer(flex: 2),
             const _Label('Email'),
             _Field(
               controller: _emailC,
@@ -222,7 +237,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 22),
+            const Spacer(flex: 3),
             Center(
               child: SizedBox(
                 width: 130,
@@ -248,7 +263,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
             ),
-            const SizedBox(height: 14),
+            const Spacer(flex: 2),
             Center(
               child: SizedBox(
                 width: 200,
@@ -299,7 +314,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            const Spacer(flex: 2),
             Center(
               child: Text.rich(
                 TextSpan(
@@ -329,17 +344,19 @@ class _LoginPageState extends State<LoginPage> {
 
 /// Header biru dengan logo, judul, dan sapaan.
 class _Header extends StatelessWidget {
-  const _Header();
+  const _Header({required this.height, required this.topInset});
+  final double height;
+  final double topInset;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      height: 236,
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 26),
+      height: height,
+      padding: EdgeInsets.fromLTRB(20, 14 + topInset, 20, 26),
       decoration: BoxDecoration(
         color: AppColors.brand,
-        borderRadius: BorderRadius.circular(36),
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(36)),
         boxShadow: [
           BoxShadow(
             color: AppColors.brand.withOpacity(.35),
@@ -462,7 +479,7 @@ class _Label extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(6, 14, 0, 6),
+      padding: const EdgeInsets.fromLTRB(6, 10, 0, 6),
       child: Text(
         text,
         style: GoogleFonts.poppins(
@@ -515,6 +532,7 @@ class _Field extends StatelessWidget {
         validator: validator,
         style: GoogleFonts.poppins(fontSize: 13, color: AppColors.brand),
         decoration: InputDecoration(
+          errorStyle: GoogleFonts.poppins(fontSize: 11, height: 1.1),
           hintText: hint,
           hintStyle: GoogleFonts.poppins(fontSize: 13, color: AppColors.muted),
           prefixIcon: Icon(icon, color: AppColors.brand, size: 24),
