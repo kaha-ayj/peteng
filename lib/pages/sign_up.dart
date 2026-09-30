@@ -1,33 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/gestures.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'sign_up.dart';
-import 'home.dart';
 import 'auth_store.dart';
 
-void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  // Konten menempel sampai tepi layar (di bawah status bar & navigation bar).
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness:
-          Brightness.light, // ikon putih di atas header biru
-      systemNavigationBarColor: Colors.transparent,
-      systemNavigationBarIconBrightness: Brightness.dark,
-      systemNavigationBarContrastEnforced: false,
-    ),
-  );
-  runApp(const PetengApp());
-}
+/// ------------------------------------------------------------------
+/// Halaman Sign Up, gaya sama dengan halaman Login (main.dart):
+/// header biru edge-to-edge, warna, font, dan bentuk kolom yang sama.
+/// Tambahan field: Nama dan Nomor Telfon.
+///
+/// Cara pakai (contoh navigasi dari halaman Login):
+///   Navigator.push(context, MaterialPageRoute(builder: (_) => const SignUpPage()));
+/// ------------------------------------------------------------------
 
 class AppColors {
   static const brand = Color(0xFF172554);
   static const brandSoft = Color(0xFF46507A); // lingkaran dekorasi
-  static const page = Color(0xFFCDC8D0);
   static const card = Color(0xFFF1F1EF);
   static const muted = Color(0xFF5B6070);
   static const glow = Color(0xFFE8D98A);
@@ -39,41 +27,25 @@ const String kLogoAsset = 'lib/assets/images/logo_bulet.png';
 /// Set false setelah logo terpasang untuk menghilangkan outline penanda.
 const bool kShowLogoMarker = true;
 
-class PetengApp extends StatelessWidget {
-  const PetengApp({super.key});
+class SignUpPage extends StatefulWidget {
+  const SignUpPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'PETENG',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: AppColors.brand),
-        textTheme: GoogleFonts.poppinsTextTheme(),
-        scaffoldBackgroundColor: AppColors.card,
-      ),
-      home: const LoginPage(),
-    );
-  }
+  State<SignUpPage> createState() => _SignUpPageState();
 }
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
-
-  @override
-  State<LoginPage> createState() => _LoginPageState();
-}
-
-class _LoginPageState extends State<LoginPage> {
+class _SignUpPageState extends State<SignUpPage> {
   final _formKey = GlobalKey<FormState>();
+  final _namaC = TextEditingController();
+  final _teleponC = TextEditingController();
   final _emailC = TextEditingController();
   final _passC = TextEditingController();
   bool _obscure = true;
-  bool _remember = false;
 
   @override
   void dispose() {
+    _namaC.dispose();
+    _teleponC.dispose();
     _emailC.dispose();
     _passC.dispose();
     super.dispose();
@@ -82,82 +54,31 @@ class _LoginPageState extends State<LoginPage> {
   void _submit() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    // TODO: ganti AuthStore (lihat auth_store.dart) dengan pemanggilan
-    // API / Firebase Auth yang sesungguhnya. AuthStore saat ini hanya
-    // menyimpan akun di memori aplikasi (hilang saat aplikasi ditutup),
-    // dan tidak aman dipakai untuk produksi.
-    final result = AuthStore.instance.login(
-      email: _emailC.text,
+    final ok = AuthStore.instance.register(
+      nama: _namaC.text.trim(),
+      telepon: _teleponC.text.trim(),
+      email: _emailC.text.trim(),
       password: _passC.text,
     );
 
-    switch (result) {
-      case LoginResult.success:
-        Navigator.of(
-          context,
-        ).pushReplacement(MaterialPageRoute(builder: (_) => const Home()));
-        break;
-      case LoginResult.notRegistered:
-        _showNeedSignUpDialog();
-        break;
-      case LoginResult.wrongPassword:
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Password salah, coba lagi.')),
-        );
-        break;
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Email ini sudah terdaftar. Silakan Login.'),
+        ),
+      );
+      return;
     }
-  }
 
-  void _showNeedSignUpDialog() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'Akun belum terdaftar',
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w700,
-            color: AppColors.brand,
-          ),
-        ),
-        content: Text(
-          'Email ini belum pernah Sign Up. Silakan Sign Up dulu sebelum bisa Login.',
-          style: GoogleFonts.poppins(fontSize: 13),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(
-              'Batal',
-              style: GoogleFonts.poppins(color: AppColors.muted),
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.brand,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              _goToSignUp();
-            },
-            child: Text(
-              'Sign Up',
-              style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
-      ),
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Sign up berhasil. Silakan Login.')),
     );
-  }
 
-  void _goToSignUp() {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const SignUpPage()));
+    // Kembali ke halaman sebelumnya (Login). Halaman ini diasumsikan selalu
+    // dibuka lewat Navigator.push dari Login, sehingga selalu bisa di-pop.
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
   }
 
   static const double _maxW = 420;
@@ -165,14 +86,12 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
-    // Tinggi layar penuh (termasuk area status bar & nav bar) dan TIDAK
-    // berubah saat keyboard muncul.
     final fullH = media.size.height;
     final topInset = media.viewPadding.top;
     final headerH = (fullH * 0.30).clamp(190.0, 290.0).toDouble() + topInset;
 
     return Scaffold(
-      backgroundColor: AppColors.card, // putih tulang di seluruh layar
+      backgroundColor: AppColors.card,
       resizeToAvoidBottomInset: true,
       body: SingleChildScrollView(
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -181,7 +100,6 @@ class _LoginPageState extends State<LoginPage> {
           child: Stack(
             clipBehavior: Clip.hardEdge,
             children: [
-              // Lingkaran dekorasi (ikut ter-scroll, tidak menimpa teks)
               Positioned(
                 right: -55,
                 top: fullH * 0.70,
@@ -192,8 +110,6 @@ class _LoginPageState extends State<LoginPage> {
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: _maxW),
                   child: ConstrainedBox(
-                    // minimal setinggi layar; kalau isi lebih tinggi
-                    // (layar pendek / keyboard) tinggal di-scroll.
                     constraints: BoxConstraints(minHeight: fullH),
                     child: IntrinsicHeight(
                       child: Column(
@@ -223,10 +139,11 @@ class _LoginPageState extends State<LoginPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Login',
+              'SIGN UP',
               style: GoogleFonts.poppins(
-                fontSize: 24,
+                fontSize: 22,
                 fontWeight: FontWeight.w700,
+                letterSpacing: .5,
                 color: AppColors.brand,
                 shadows: [
                   Shadow(
@@ -237,7 +154,29 @@ class _LoginPageState extends State<LoginPage> {
                 ],
               ),
             ),
-            const Spacer(flex: 2),
+            const SizedBox(height: 18),
+            const _Label('•Nama'),
+            _Field(
+              controller: _namaC,
+              hint: 'Khusnul Khotimah',
+              icon: Icons.person_outline,
+              textCapitalization: TextCapitalization.words,
+              validator: (v) =>
+                  (v == null || v.trim().isEmpty) ? 'Nama wajib diisi' : null,
+            ),
+            const _Label('Nomor Telfon'),
+            _Field(
+              controller: _teleponC,
+              hint: '+62',
+              icon: Icons.call_outlined,
+              keyboardType: TextInputType.phone,
+              validator: (v) {
+                final t = (v ?? '').trim();
+                if (t.isEmpty) return 'Nomor telfon wajib diisi';
+                final ok = RegExp(r'^\+?[0-9]{8,15}$').hasMatch(t);
+                return ok ? null : 'Nomor telfon tidak valid';
+              },
+            ),
             const _Label('Email'),
             _Field(
               controller: _emailC,
@@ -257,8 +196,11 @@ class _LoginPageState extends State<LoginPage> {
               hint: '•••••••••••••',
               icon: Icons.lock_outline,
               obscure: _obscure,
-              validator: (v) =>
-                  (v == null || v.isEmpty) ? 'Password wajib diisi' : null,
+              validator: (v) {
+                if (v == null || v.isEmpty) return 'Password wajib diisi';
+                if (v.length < 8) return 'Minimal 8 karakter';
+                return null;
+              },
               suffix: IconButton(
                 tooltip: _obscure
                     ? 'Tampilkan password'
@@ -272,55 +214,10 @@ class _LoginPageState extends State<LoginPage> {
                 onPressed: () => setState(() => _obscure = !_obscure),
               ),
             ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                InkWell(
-                  onTap: () => setState(() => _remember = !_remember),
-                  borderRadius: BorderRadius.circular(6),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SizedBox(
-                        width: 32,
-                        height: 32,
-                        child: Checkbox(
-                          value: _remember,
-                          activeColor: AppColors.brand,
-                          onChanged: (v) =>
-                              setState(() => _remember = v ?? false),
-                        ),
-                      ),
-                      Text(
-                        'Remember Me',
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          color: AppColors.muted,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {},
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppColors.muted,
-                    padding: EdgeInsets.zero,
-                    minimumSize: const Size(0, 32),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: Text(
-                    'Forgot password?',
-                    style: GoogleFonts.poppins(fontSize: 12),
-                  ),
-                ),
-              ],
-            ),
-            const Spacer(flex: 3),
+            const SizedBox(height: 22),
             Center(
               child: SizedBox(
-                width: 130,
+                width: 150,
                 height: 42,
                 child: ElevatedButton(
                   onPressed: _submit,
@@ -334,7 +231,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                   child: Text(
-                    'Login',
+                    'Sign Up',
                     style: GoogleFonts.poppins(
                       fontSize: 17,
                       fontWeight: FontWeight.w600,
@@ -343,17 +240,17 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
             ),
-            const Spacer(flex: 2),
+            const SizedBox(height: 14),
             Center(
               child: SizedBox(
-                width: 200,
+                width: 210,
                 child: Row(
                   children: [
                     const Expanded(child: Divider(color: AppColors.muted)),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       child: Text(
-                        'or login with',
+                        'or sign up with',
                         style: GoogleFonts.poppins(
                           fontSize: 11,
                           color: AppColors.muted,
@@ -370,9 +267,8 @@ class _LoginPageState extends State<LoginPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 _SocialButton(
-                  semanticLabel: 'Login dengan Google',
+                  semanticLabel: 'Daftar dengan Google',
                   onTap: () {},
-                  // Ganti dengan logo Google resmi (asset/SVG) bila perlu.
                   child: Text(
                     'G',
                     style: GoogleFonts.poppins(
@@ -384,7 +280,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(width: 24),
                 _SocialButton(
-                  semanticLabel: 'Login dengan Facebook',
+                  semanticLabel: 'Daftar dengan Facebook',
                   onTap: () {},
                   child: const Icon(
                     Icons.facebook,
@@ -394,26 +290,28 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ],
             ),
-            const Spacer(flex: 2),
+            const SizedBox(height: 14),
             Center(
-              child: Text.rich(
-                TextSpan(
-                  text: 'Belum punya akun? ',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: AppColors.muted,
-                  ),
-                  children: [
-                    TextSpan(
-                      text: 'Sign Up',
-                      style: const TextStyle(
-                        color: AppColors.brand,
-                        fontWeight: FontWeight.w700,
-                        decoration: TextDecoration.underline,
-                      ),
-                      recognizer: TapGestureRecognizer()..onTap = _goToSignUp,
+              child: GestureDetector(
+                onTap: () => Navigator.of(context).maybePop(),
+                child: Text.rich(
+                  TextSpan(
+                    text: 'Sudah punya akun? ',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: AppColors.muted,
                     ),
-                  ],
+                    children: const [
+                      TextSpan(
+                        text: 'Login',
+                        style: TextStyle(
+                          color: AppColors.brand,
+                          fontWeight: FontWeight.w700,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -424,7 +322,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
-/// Header biru dengan logo, judul, dan sapaan.
+/// Header biru, sama seperti di halaman Login.
 class _Header extends StatelessWidget {
   const _Header({required this.height, required this.topInset});
   final double height;
@@ -509,8 +407,6 @@ class _Header extends StatelessWidget {
 }
 
 /// >>> TANDA LOGO <<<
-/// Menampilkan gambar dari [kLogoAsset]. Jika file belum ada,
-/// otomatis tampil placeholder "LOGO".
 class _LogoSlot extends StatelessWidget {
   const _LogoSlot();
 
@@ -582,6 +478,7 @@ class _Field extends StatelessWidget {
     this.obscure = false,
     this.suffix,
     this.keyboardType,
+    this.textCapitalization = TextCapitalization.none,
     this.validator,
   });
 
@@ -591,6 +488,7 @@ class _Field extends StatelessWidget {
   final bool obscure;
   final Widget? suffix;
   final TextInputType? keyboardType;
+  final TextCapitalization textCapitalization;
   final String? Function(String?)? validator;
 
   @override
@@ -611,6 +509,7 @@ class _Field extends StatelessWidget {
         controller: controller,
         obscureText: obscure,
         keyboardType: keyboardType,
+        textCapitalization: textCapitalization,
         validator: validator,
         style: GoogleFonts.poppins(fontSize: 13, color: AppColors.brand),
         decoration: InputDecoration(
