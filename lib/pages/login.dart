@@ -74,40 +74,26 @@ class _LoginPageState extends State<LoginPage> {
         // app_user = data user
 
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-            builder: (_) => const Home(),
-          ),
+          MaterialPageRoute(builder: (_) => const Home()),
           (route) => false,
         );
         break;
 
       case LoginResult.notRegistered:
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Email belum terdaftar.',
-            ),
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Email belum terdaftar.')));
         break;
 
       case LoginResult.wrongPassword:
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Password salah.',
-            ),
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Password salah.')));
         break;
 
       case LoginResult.networkError:
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Tidak dapat terhubung ke server.',
-            ),
-          ),
+          const SnackBar(content: Text('Tidak dapat terhubung ke server.')),
         );
         break;
     }
@@ -122,16 +108,13 @@ class _LoginPageState extends State<LoginPage> {
     final fullH = media.size.height;
     final topInset = media.viewPadding.top;
 
-    final headerH =
-        (fullH * 0.30).clamp(190.0, 290.0).toDouble() +
-        topInset;
+    final headerH = (fullH * 0.30).clamp(190.0, 290.0).toDouble() + topInset;
 
     return Scaffold(
       backgroundColor: AppColors.card,
       resizeToAvoidBottomInset: true,
       body: SingleChildScrollView(
-        keyboardDismissBehavior:
-            ScrollViewKeyboardDismissBehavior.onDrag,
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         child: SizedBox(
           width: double.infinity,
           child: Stack(
@@ -143,35 +126,19 @@ class _LoginPageState extends State<LoginPage> {
                 child: const _Dot(size: 110),
               ),
 
-              const Positioned(
-                left: -60,
-                bottom: -60,
-                child: _Dot(size: 150),
-              ),
+              const Positioned(left: -60, bottom: -60, child: _Dot(size: 150)),
 
               Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: _maxW,
-                  ),
+                  constraints: const BoxConstraints(maxWidth: _maxW),
                   child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minHeight: fullH,
-                    ),
+                    constraints: BoxConstraints(minHeight: fullH),
                     child: IntrinsicHeight(
                       child: Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _Header(
-                            height: headerH,
-                            topInset: topInset,
-                          ),
-                          Expanded(
-                            child: _buildForm(
-                              media.viewPadding.bottom,
-                            ),
-                          ),
+                          _Header(height: headerH, topInset: topInset),
+                          Expanded(child: _buildForm(media.viewPadding.bottom)),
                         ],
                       ),
                     ),
@@ -187,17 +154,11 @@ class _LoginPageState extends State<LoginPage> {
 
   Widget _buildForm(double bottomInset) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(
-        28,
-        18,
-        28,
-        20 + bottomInset,
-      ),
+      padding: EdgeInsets.fromLTRB(28, 18, 28, 20 + bottomInset),
       child: Form(
         key: _formKey,
         child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'LOGIN',
@@ -208,8 +169,7 @@ class _LoginPageState extends State<LoginPage> {
                 color: AppColors.brand,
                 shadows: [
                   Shadow(
-                    color:
-                        AppColors.brand.withOpacity(.3),
+                    color: AppColors.brand.withOpacity(.3),
                     offset: const Offset(1, 2),
                     blurRadius: 3,
                   ),
@@ -225,8 +185,7 @@ class _LoginPageState extends State<LoginPage> {
               controller: _emailC,
               hint: 'Example@gmail.com',
               icon: Icons.mail_outline,
-              keyboardType:
-                  TextInputType.emailAddress,
+              keyboardType: TextInputType.emailAddress,
               validator: (v) {
                 final t = (v ?? '').trim();
 
@@ -234,13 +193,9 @@ class _LoginPageState extends State<LoginPage> {
                   return 'Email wajib diisi';
                 }
 
-                final ok = RegExp(
-                  r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
-                ).hasMatch(t);
+                final ok = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(t);
 
-                return ok
-                    ? null
-                    : 'Format email tidak valid';
+                return ok ? null : 'Format email tidak valid';
               },
             ),
 
@@ -279,8 +234,7 @@ class _LoginPageState extends State<LoginPage> {
             const SizedBox(height: 8),
 
             Row(
-              mainAxisAlignment:
-                  MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
                   children: [
@@ -292,8 +246,7 @@ class _LoginPageState extends State<LoginPage> {
                         activeColor: AppColors.brand,
                         onChanged: (value) {
                           setState(() {
-                            _rememberMe =
-                                value ?? false;
+                            _rememberMe = value ?? false;
                           });
                         },
                       ),
@@ -311,12 +264,9 @@ class _LoginPageState extends State<LoginPage> {
 
                 GestureDetector(
                   onTap: () {
-                    ScaffoldMessenger.of(context)
-                        .showSnackBar(
+                    ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text(
-                          'Fitur lupa password belum tersedia.',
-                        ),
+                        content: Text('Fitur lupa password belum tersedia.'),
                       ),
                     );
                   },
@@ -325,10 +275,8 @@ class _LoginPageState extends State<LoginPage> {
                     style: GoogleFonts.poppins(
                       fontSize: 11,
                       color: AppColors.brand,
-                      fontWeight:
-                          FontWeight.w600,
-                      decoration:
-                          TextDecoration.underline,
+                      fontWeight: FontWeight.w600,
+                      decoration: TextDecoration.underline,
                     ),
                   ),
                 ),
@@ -342,27 +290,21 @@ class _LoginPageState extends State<LoginPage> {
                 width: 130,
                 height: 42,
                 child: ElevatedButton(
-                  onPressed:
-                      _isLoading ? null : _submit,
+                  onPressed: _isLoading ? null : _submit,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                        AppColors.brand,
+                    backgroundColor: AppColors.brand,
                     foregroundColor: Colors.white,
                     elevation: 6,
-                    shadowColor:
-                        AppColors.brand.withOpacity(.5),
-                    shape:
-                        RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(12),
+                    shadowColor: AppColors.brand.withOpacity(.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   child: _isLoading
                       ? const SizedBox(
                           width: 20,
                           height: 20,
-                          child:
-                              CircularProgressIndicator(
+                          child: CircularProgressIndicator(
                             strokeWidth: 2,
                             color: Colors.white,
                           ),
@@ -371,8 +313,7 @@ class _LoginPageState extends State<LoginPage> {
                           'Login',
                           style: GoogleFonts.poppins(
                             fontSize: 17,
-                            fontWeight:
-                                FontWeight.w600,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                 ),
@@ -386,16 +327,9 @@ class _LoginPageState extends State<LoginPage> {
                 width: 210,
                 child: Row(
                   children: [
-                    const Expanded(
-                      child: Divider(
-                        color: AppColors.muted,
-                      ),
-                    ),
+                    const Expanded(child: Divider(color: AppColors.muted)),
                     Padding(
-                      padding:
-                          const EdgeInsets.symmetric(
-                        horizontal: 8,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
                       child: Text(
                         'or login with',
                         style: GoogleFonts.poppins(
@@ -404,11 +338,7 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
                     ),
-                    const Expanded(
-                      child: Divider(
-                        color: AppColors.muted,
-                      ),
-                    ),
+                    const Expanded(child: Divider(color: AppColors.muted)),
                   ],
                 ),
               ),
@@ -417,21 +347,17 @@ class _LoginPageState extends State<LoginPage> {
             const SizedBox(height: 10),
 
             Row(
-              mainAxisAlignment:
-                  MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 _SocialButton(
-                  semanticLabel:
-                      'Login dengan Google',
+                  semanticLabel: 'Login dengan Google',
                   onTap: () {},
                   child: Text(
                     'G',
                     style: GoogleFonts.poppins(
                       fontSize: 17,
-                      fontWeight:
-                          FontWeight.w700,
-                      color:
-                          const Color(0xFF4285F4),
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF4285F4),
                     ),
                   ),
                 ),
@@ -439,14 +365,12 @@ class _LoginPageState extends State<LoginPage> {
                 const SizedBox(width: 24),
 
                 _SocialButton(
-                  semanticLabel:
-                      'Login dengan Facebook',
+                  semanticLabel: 'Login dengan Facebook',
                   onTap: () {},
                   child: const Icon(
                     Icons.facebook,
                     size: 20,
-                    color:
-                        Color(0xFF1877F2),
+                    color: Color(0xFF1877F2),
                   ),
                 ),
               ],
@@ -457,12 +381,9 @@ class _LoginPageState extends State<LoginPage> {
             Center(
               child: GestureDetector(
                 onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          const SignUpPage(),
-                    ),
-                  );
+                  Navigator.of(
+                    context,
+                  ).push(MaterialPageRoute(builder: (_) => const SignUpPage()));
                 },
                 child: Text.rich(
                   TextSpan(
@@ -476,11 +397,8 @@ class _LoginPageState extends State<LoginPage> {
                         text: 'Sign Up',
                         style: TextStyle(
                           color: AppColors.brand,
-                          fontWeight:
-                              FontWeight.w700,
-                          decoration:
-                              TextDecoration
-                                  .underline,
+                          fontWeight: FontWeight.w700,
+                          decoration: TextDecoration.underline,
                         ),
                       ),
                     ],
@@ -496,10 +414,7 @@ class _LoginPageState extends State<LoginPage> {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({
-    required this.height,
-    required this.topInset,
-  });
+  const _Header({required this.height, required this.topInset});
 
   final double height;
   final double topInset;
@@ -509,30 +424,20 @@ class _Header extends StatelessWidget {
     return Container(
       width: double.infinity,
       height: height,
-      padding: EdgeInsets.fromLTRB(
-        20,
-        14 + topInset,
-        20,
-        26,
-      ),
+      padding: EdgeInsets.fromLTRB(20, 14 + topInset, 20, 26),
       decoration: BoxDecoration(
         color: AppColors.brand,
-        borderRadius:
-            const BorderRadius.vertical(
-          bottom: Radius.circular(36),
-        ),
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(36)),
         boxShadow: [
           BoxShadow(
-            color:
-                AppColors.brand.withOpacity(.35),
+            color: AppColors.brand.withOpacity(.35),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
         ],
       ),
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
@@ -542,22 +447,16 @@ class _Header extends StatelessWidget {
                 'PETENG',
                 style: GoogleFonts.poppins(
                   fontSize: 26,
-                  fontWeight:
-                      FontWeight.w800,
+                  fontWeight: FontWeight.w800,
                   letterSpacing: .8,
                   color: Colors.white,
                   shadows: [
                     Shadow(
-                      color:
-                          AppColors.glow
-                              .withOpacity(.55),
-                      offset:
-                          const Offset(2, 2),
+                      color: AppColors.glow.withOpacity(.55),
+                      offset: const Offset(2, 2),
                     ),
                     Shadow(
-                      color:
-                          AppColors.glow
-                              .withOpacity(.5),
+                      color: AppColors.glow.withOpacity(.5),
                       blurRadius: 10,
                     ),
                   ],
@@ -572,8 +471,7 @@ class _Header extends StatelessWidget {
             'Hello !',
             style: GoogleFonts.poppins(
               fontSize: 28,
-              fontWeight:
-                  FontWeight.w700,
+              fontWeight: FontWeight.w700,
               color: Colors.white,
               height: 1.15,
             ),
@@ -585,8 +483,7 @@ class _Header extends StatelessWidget {
             'Welcome to PETENG',
             style: GoogleFonts.poppins(
               fontSize: 15,
-              fontWeight:
-                  FontWeight.w600,
+              fontWeight: FontWeight.w600,
               color: Colors.white,
             ),
           ),
@@ -595,10 +492,8 @@ class _Header extends StatelessWidget {
             'Petakan Gelap, Temukan Terang',
             style: GoogleFonts.poppins(
               fontSize: 12,
-              fontWeight:
-                  FontWeight.w500,
-              color: Colors.white
-                  .withOpacity(.95),
+              fontWeight: FontWeight.w500,
+              color: Colors.white.withOpacity(.95),
             ),
           ),
         ],
@@ -619,21 +514,15 @@ class _LogoSlot extends StatelessWidget {
         shape: BoxShape.circle,
         color: Colors.white,
         border: kShowLogoMarker
-            ? Border.all(
-                color:
-                    const Color(0xFFF0B429),
-                width: 2,
-              )
+            ? Border.all(color: const Color(0xFFF0B429), width: 2)
             : null,
       ),
       child: ClipOval(
         child: Image.asset(
           kLogoAsset,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) =>
-              Column(
-            mainAxisAlignment:
-                MainAxisAlignment.center,
+          errorBuilder: (_, __, ___) => Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Icon(
                 Icons.image_outlined,
@@ -644,8 +533,7 @@ class _LogoSlot extends StatelessWidget {
                 'LOGO',
                 style: GoogleFonts.poppins(
                   fontSize: 10,
-                  fontWeight:
-                      FontWeight.w600,
+                  fontWeight: FontWeight.w600,
                   color: AppColors.brand,
                 ),
               ),
@@ -665,19 +553,12 @@ class _Label extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding:
-          const EdgeInsets.fromLTRB(
-        6,
-        10,
-        0,
-        6,
-      ),
+      padding: const EdgeInsets.fromLTRB(6, 10, 0, 6),
       child: Text(
         text,
         style: GoogleFonts.poppins(
           fontSize: 14,
-          fontWeight:
-              FontWeight.w500,
+          fontWeight: FontWeight.w500,
           color: AppColors.brand,
         ),
       ),
@@ -709,8 +590,7 @@ class _Field extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius:
-            BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(14),
         boxShadow: const [
           BoxShadow(
             color: Color(0x47000000),
@@ -724,73 +604,35 @@ class _Field extends StatelessWidget {
         obscureText: obscure,
         keyboardType: keyboardType,
         validator: validator,
-        style: GoogleFonts.poppins(
-          fontSize: 13,
-          color: AppColors.brand,
-        ),
+        style: GoogleFonts.poppins(fontSize: 13, color: AppColors.brand),
         decoration: InputDecoration(
-          errorStyle:
-              GoogleFonts.poppins(
-            fontSize: 11,
-            height: 1.1,
-          ),
+          errorStyle: GoogleFonts.poppins(fontSize: 11, height: 1.1),
           hintText: hint,
-          hintStyle:
-              GoogleFonts.poppins(
-            fontSize: 13,
-            color: AppColors.muted,
-          ),
-          prefixIcon: Icon(
-            icon,
-            color: AppColors.brand,
-            size: 24,
-          ),
+          hintStyle: GoogleFonts.poppins(fontSize: 13, color: AppColors.muted),
+          prefixIcon: Icon(icon, color: AppColors.brand, size: 24),
           suffixIcon: suffix,
           border: InputBorder.none,
-          enabledBorder:
-              InputBorder.none,
-          focusedBorder:
-              OutlineInputBorder(
-            borderRadius:
-                BorderRadius.circular(14),
-            borderSide:
-                const BorderSide(
-              color: AppColors.brand,
-              width: 2,
-            ),
+          enabledBorder: InputBorder.none,
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: AppColors.brand, width: 2),
           ),
-          errorBorder:
-              OutlineInputBorder(
-            borderRadius:
-                BorderRadius.circular(14),
-            borderSide:
-                const BorderSide(
-              color: Color(0xFFB3261E),
-              width: 1.5,
-            ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: Color(0xFFB3261E), width: 1.5),
           ),
-          focusedErrorBorder:
-              OutlineInputBorder(
-            borderRadius:
-                BorderRadius.circular(14),
-            borderSide:
-                const BorderSide(
-              color: Color(0xFFB3261E),
-              width: 2,
-            ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: Color(0xFFB3261E), width: 2),
           ),
-          contentPadding:
-              const EdgeInsets.symmetric(
-            vertical: 14,
-          ),
+          contentPadding: const EdgeInsets.symmetric(vertical: 14),
         ),
       ),
     );
   }
 }
 
-class _SocialButton
-    extends StatelessWidget {
+class _SocialButton extends StatelessWidget {
   const _SocialButton({
     required this.child,
     required this.onTap,
@@ -809,24 +651,17 @@ class _SocialButton
       child: Material(
         color: AppColors.card,
         elevation: 2,
-        borderRadius:
-            BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(10),
         child: InkWell(
           onTap: onTap,
-          borderRadius:
-              BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(10),
           child: Container(
             width: 66,
             height: 32,
             alignment: Alignment.center,
-            decoration:
-                BoxDecoration(
-              borderRadius:
-                  BorderRadius.circular(10),
-              border: Border.all(
-                color: AppColors.muted,
-                width: 1,
-              ),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.muted, width: 1),
             ),
             child: child,
           ),
@@ -837,9 +672,7 @@ class _SocialButton
 }
 
 class _Dot extends StatelessWidget {
-  const _Dot({
-    required this.size,
-  });
+  const _Dot({required this.size});
 
   final double size;
 
@@ -848,8 +681,7 @@ class _Dot extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration:
-          const BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppColors.brandSoft,
         shape: BoxShape.circle,
       ),

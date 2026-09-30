@@ -11,8 +11,7 @@ class AppColors {
   static const glow = Color(0xFFE8D98A);
 }
 
-const String kLogoAsset =
-    'lib/assets/images/logo_bulet.png';
+const String kLogoAsset = 'lib/assets/images/logo_bulet.png';
 
 const bool kShowLogoMarker = true;
 
@@ -20,8 +19,7 @@ class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
 
   @override
-  State<SignUpPage> createState() =>
-      _SignUpPageState();
+  State<SignUpPage> createState() => _SignUpPageState();
 }
 
 class _SignUpPageState extends State<SignUpPage> {
@@ -83,11 +81,7 @@ class _SignUpPageState extends State<SignUpPage> {
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Sign up berhasil. Silakan Login.',
-        ),
-      ),
+      const SnackBar(content: Text('Sign up berhasil. Silakan Login.')),
     );
 
     if (Navigator.of(context).canPop()) {
@@ -104,16 +98,13 @@ class _SignUpPageState extends State<SignUpPage> {
     final fullH = media.size.height;
     final topInset = media.viewPadding.top;
 
-    final headerH =
-        (fullH * 0.30).clamp(190.0, 290.0).toDouble() +
-        topInset;
+    final headerH = (fullH * 0.30).clamp(190.0, 290.0).toDouble() + topInset;
 
     return Scaffold(
       backgroundColor: AppColors.card,
       resizeToAvoidBottomInset: true,
       body: SingleChildScrollView(
-        keyboardDismissBehavior:
-            ScrollViewKeyboardDismissBehavior.onDrag,
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         child: SizedBox(
           width: double.infinity,
           child: Stack(
@@ -125,35 +116,19 @@ class _SignUpPageState extends State<SignUpPage> {
                 child: const _Dot(size: 110),
               ),
 
-              const Positioned(
-                left: -60,
-                bottom: -60,
-                child: _Dot(size: 150),
-              ),
+              const Positioned(left: -60, bottom: -60, child: _Dot(size: 150)),
 
               Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: _maxW,
-                  ),
+                  constraints: const BoxConstraints(maxWidth: _maxW),
                   child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minHeight: fullH,
-                    ),
+                    constraints: BoxConstraints(minHeight: fullH),
                     child: IntrinsicHeight(
                       child: Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _Header(
-                            height: headerH,
-                            topInset: topInset,
-                          ),
-                          Expanded(
-                            child: _buildForm(
-                              media.viewPadding.bottom,
-                            ),
-                          ),
+                          _Header(height: headerH, topInset: topInset),
+                          Expanded(child: _buildForm(media.viewPadding.bottom)),
                         ],
                       ),
                     ),
@@ -169,17 +144,11 @@ class _SignUpPageState extends State<SignUpPage> {
 
   Widget _buildForm(double bottomInset) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(
-        28,
-        18,
-        28,
-        20 + bottomInset,
-      ),
+      padding: EdgeInsets.fromLTRB(28, 18, 28, 20 + bottomInset),
       child: Form(
         key: _formKey,
         child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'SIGN UP',
@@ -190,8 +159,7 @@ class _SignUpPageState extends State<SignUpPage> {
                 color: AppColors.brand,
                 shadows: [
                   Shadow(
-                    color:
-                        AppColors.brand.withOpacity(.3),
+                    color: AppColors.brand.withOpacity(.3),
                     offset: const Offset(1, 2),
                     blurRadius: 3,
                   ),
@@ -201,18 +169,15 @@ class _SignUpPageState extends State<SignUpPage> {
 
             const SizedBox(height: 18),
 
-            const _Label('•Nama'),
+            const _Label('Nama'),
 
             _Field(
               controller: _namaC,
-              hint: 'Khusnul Khotimah',
+              hint: 'Nama Lengkap',
               icon: Icons.person_outline,
-              textCapitalization:
-                  TextCapitalization.words,
+              textCapitalization: TextCapitalization.words,
               validator: (v) =>
-                  (v == null || v.trim().isEmpty)
-                      ? 'Nama wajib diisi'
-                      : null,
+                  (v == null || v.trim().isEmpty) ? 'Nama wajib diisi' : null,
             ),
 
             const _Label('Nomor Telfon'),
@@ -221,12 +186,9 @@ class _SignUpPageState extends State<SignUpPage> {
               controller: _teleponC,
               hint: '+62',
               icon: Icons.call_outlined,
-              keyboardType:
-                  TextInputType.phone,
+              keyboardType: TextInputType.phone,
               inputFormatters: [
-                FilteringTextInputFormatter.allow(
-                  RegExp(r'[0-9+]'),
-                ),
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9+]')),
               ],
               validator: (v) {
                 final t = (v ?? '').trim();
@@ -235,13 +197,9 @@ class _SignUpPageState extends State<SignUpPage> {
                   return 'Nomor telfon wajib diisi';
                 }
 
-                final ok = RegExp(
-                  r'^\+?[0-9]{8,15}$',
-                ).hasMatch(t);
+                final ok = RegExp(r'^\+?[0-9]{8,15}$').hasMatch(t);
 
-                return ok
-                    ? null
-                    : 'Nomor telfon tidak valid';
+                return ok ? null : 'Nomor telfon tidak valid';
               },
             ),
 
@@ -251,8 +209,7 @@ class _SignUpPageState extends State<SignUpPage> {
               controller: _emailC,
               hint: 'Example@gmail.com',
               icon: Icons.mail_outline,
-              keyboardType:
-                  TextInputType.emailAddress,
+              keyboardType: TextInputType.emailAddress,
               validator: (v) {
                 final t = (v ?? '').trim();
 
@@ -260,13 +217,9 @@ class _SignUpPageState extends State<SignUpPage> {
                   return 'Email wajib diisi';
                 }
 
-                final ok = RegExp(
-                  r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
-                ).hasMatch(t);
+                final ok = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(t);
 
-                return ok
-                    ? null
-                    : 'Format email tidak valid';
+                return ok ? null : 'Format email tidak valid';
               },
             ),
 
@@ -313,27 +266,21 @@ class _SignUpPageState extends State<SignUpPage> {
                 width: 150,
                 height: 42,
                 child: ElevatedButton(
-                  onPressed:
-                      _isLoading ? null : _submit,
+                  onPressed: _isLoading ? null : _submit,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                        AppColors.brand,
+                    backgroundColor: AppColors.brand,
                     foregroundColor: Colors.white,
                     elevation: 6,
-                    shadowColor:
-                        AppColors.brand.withOpacity(.5),
-                    shape:
-                        RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(12),
+                    shadowColor: AppColors.brand.withOpacity(.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   child: _isLoading
                       ? const SizedBox(
                           width: 20,
                           height: 20,
-                          child:
-                              CircularProgressIndicator(
+                          child: CircularProgressIndicator(
                             strokeWidth: 2,
                             color: Colors.white,
                           ),
@@ -342,8 +289,7 @@ class _SignUpPageState extends State<SignUpPage> {
                           'Sign Up',
                           style: GoogleFonts.poppins(
                             fontSize: 17,
-                            fontWeight:
-                                FontWeight.w600,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                 ),
@@ -357,16 +303,9 @@ class _SignUpPageState extends State<SignUpPage> {
                 width: 210,
                 child: Row(
                   children: [
-                    const Expanded(
-                      child: Divider(
-                        color: AppColors.muted,
-                      ),
-                    ),
+                    const Expanded(child: Divider(color: AppColors.muted)),
                     Padding(
-                      padding:
-                          const EdgeInsets.symmetric(
-                        horizontal: 8,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
                       child: Text(
                         'or sign up with',
                         style: GoogleFonts.poppins(
@@ -375,11 +314,7 @@ class _SignUpPageState extends State<SignUpPage> {
                         ),
                       ),
                     ),
-                    const Expanded(
-                      child: Divider(
-                        color: AppColors.muted,
-                      ),
-                    ),
+                    const Expanded(child: Divider(color: AppColors.muted)),
                   ],
                 ),
               ),
@@ -388,21 +323,17 @@ class _SignUpPageState extends State<SignUpPage> {
             const SizedBox(height: 10),
 
             Row(
-              mainAxisAlignment:
-                  MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 _SocialButton(
-                  semanticLabel:
-                      'Daftar dengan Google',
+                  semanticLabel: 'Daftar dengan Google',
                   onTap: () {},
                   child: Text(
                     'G',
                     style: GoogleFonts.poppins(
                       fontSize: 17,
-                      fontWeight:
-                          FontWeight.w700,
-                      color:
-                          const Color(0xFF4285F4),
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF4285F4),
                     ),
                   ),
                 ),
@@ -410,14 +341,12 @@ class _SignUpPageState extends State<SignUpPage> {
                 const SizedBox(width: 24),
 
                 _SocialButton(
-                  semanticLabel:
-                      'Daftar dengan Facebook',
+                  semanticLabel: 'Daftar dengan Facebook',
                   onTap: () {},
                   child: const Icon(
                     Icons.facebook,
                     size: 20,
-                    color:
-                        Color(0xFF1877F2),
+                    color: Color(0xFF1877F2),
                   ),
                 ),
               ],
@@ -427,9 +356,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
             Center(
               child: GestureDetector(
-                onTap: () =>
-                    Navigator.of(context)
-                        .maybePop(),
+                onTap: () => Navigator.of(context).maybePop(),
                 child: Text.rich(
                   TextSpan(
                     text: 'Sudah punya akun? ',
@@ -442,11 +369,8 @@ class _SignUpPageState extends State<SignUpPage> {
                         text: 'Login',
                         style: TextStyle(
                           color: AppColors.brand,
-                          fontWeight:
-                              FontWeight.w700,
-                          decoration:
-                              TextDecoration
-                                  .underline,
+                          fontWeight: FontWeight.w700,
+                          decoration: TextDecoration.underline,
                         ),
                       ),
                     ],
@@ -462,10 +386,7 @@ class _SignUpPageState extends State<SignUpPage> {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({
-    required this.height,
-    required this.topInset,
-  });
+  const _Header({required this.height, required this.topInset});
 
   final double height;
   final double topInset;
@@ -475,30 +396,20 @@ class _Header extends StatelessWidget {
     return Container(
       width: double.infinity,
       height: height,
-      padding: EdgeInsets.fromLTRB(
-        20,
-        14 + topInset,
-        20,
-        26,
-      ),
+      padding: EdgeInsets.fromLTRB(20, 14 + topInset, 20, 26),
       decoration: BoxDecoration(
         color: AppColors.brand,
-        borderRadius:
-            const BorderRadius.vertical(
-          bottom: Radius.circular(36),
-        ),
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(36)),
         boxShadow: [
           BoxShadow(
-            color:
-                AppColors.brand.withOpacity(.35),
+            color: AppColors.brand.withOpacity(.35),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
         ],
       ),
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
@@ -508,22 +419,16 @@ class _Header extends StatelessWidget {
                 'PETENG',
                 style: GoogleFonts.poppins(
                   fontSize: 26,
-                  fontWeight:
-                      FontWeight.w800,
+                  fontWeight: FontWeight.w800,
                   letterSpacing: .8,
                   color: Colors.white,
                   shadows: [
                     Shadow(
-                      color:
-                          AppColors.glow
-                              .withOpacity(.55),
-                      offset:
-                          const Offset(2, 2),
+                      color: AppColors.glow.withOpacity(.55),
+                      offset: const Offset(2, 2),
                     ),
                     Shadow(
-                      color:
-                          AppColors.glow
-                              .withOpacity(.5),
+                      color: AppColors.glow.withOpacity(.5),
                       blurRadius: 10,
                     ),
                   ],
@@ -538,8 +443,7 @@ class _Header extends StatelessWidget {
             'Hello !',
             style: GoogleFonts.poppins(
               fontSize: 28,
-              fontWeight:
-                  FontWeight.w700,
+              fontWeight: FontWeight.w700,
               color: Colors.white,
               height: 1.15,
             ),
@@ -551,8 +455,7 @@ class _Header extends StatelessWidget {
             'Welcome to PETENG',
             style: GoogleFonts.poppins(
               fontSize: 15,
-              fontWeight:
-                  FontWeight.w600,
+              fontWeight: FontWeight.w600,
               color: Colors.white,
             ),
           ),
@@ -561,10 +464,8 @@ class _Header extends StatelessWidget {
             'Petakan Gelap, Temukan Terang',
             style: GoogleFonts.poppins(
               fontSize: 12,
-              fontWeight:
-                  FontWeight.w500,
-              color: Colors.white
-                  .withOpacity(.95),
+              fontWeight: FontWeight.w500,
+              color: Colors.white.withOpacity(.95),
             ),
           ),
         ],
@@ -585,21 +486,15 @@ class _LogoSlot extends StatelessWidget {
         shape: BoxShape.circle,
         color: Colors.white,
         border: kShowLogoMarker
-            ? Border.all(
-                color:
-                    const Color(0xFFF0B429),
-                width: 2,
-              )
+            ? Border.all(color: const Color(0xFFF0B429), width: 2)
             : null,
       ),
       child: ClipOval(
         child: Image.asset(
           kLogoAsset,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) =>
-              Column(
-            mainAxisAlignment:
-                MainAxisAlignment.center,
+          errorBuilder: (_, __, ___) => Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Icon(
                 Icons.image_outlined,
@@ -610,8 +505,7 @@ class _LogoSlot extends StatelessWidget {
                 'LOGO',
                 style: GoogleFonts.poppins(
                   fontSize: 10,
-                  fontWeight:
-                      FontWeight.w600,
+                  fontWeight: FontWeight.w600,
                   color: AppColors.brand,
                 ),
               ),
@@ -631,19 +525,12 @@ class _Label extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding:
-          const EdgeInsets.fromLTRB(
-        6,
-        10,
-        0,
-        6,
-      ),
+      padding: const EdgeInsets.fromLTRB(6, 10, 0, 6),
       child: Text(
         text,
         style: GoogleFonts.poppins(
           fontSize: 14,
-          fontWeight:
-              FontWeight.w500,
+          fontWeight: FontWeight.w500,
           color: AppColors.brand,
         ),
       ),
@@ -659,8 +546,7 @@ class _Field extends StatelessWidget {
     this.obscure = false,
     this.suffix,
     this.keyboardType,
-    this.textCapitalization =
-        TextCapitalization.none,
+    this.textCapitalization = TextCapitalization.none,
     this.inputFormatters,
     this.validator,
   });
@@ -671,20 +557,16 @@ class _Field extends StatelessWidget {
   final bool obscure;
   final Widget? suffix;
   final TextInputType? keyboardType;
-  final TextCapitalization
-      textCapitalization;
-  final List<TextInputFormatter>?
-      inputFormatters;
-  final String? Function(String?)?
-      validator;
+  final TextCapitalization textCapitalization;
+  final List<TextInputFormatter>? inputFormatters;
+  final String? Function(String?)? validator;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius:
-            BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(14),
         boxShadow: const [
           BoxShadow(
             color: Color(0x47000000),
@@ -697,78 +579,38 @@ class _Field extends StatelessWidget {
         controller: controller,
         obscureText: obscure,
         keyboardType: keyboardType,
-        textCapitalization:
-            textCapitalization,
-        inputFormatters:
-            inputFormatters,
+        textCapitalization: textCapitalization,
+        inputFormatters: inputFormatters,
         validator: validator,
-        style: GoogleFonts.poppins(
-          fontSize: 13,
-          color: AppColors.brand,
-        ),
+        style: GoogleFonts.poppins(fontSize: 13, color: AppColors.brand),
         decoration: InputDecoration(
-          errorStyle:
-              GoogleFonts.poppins(
-            fontSize: 11,
-            height: 1.1,
-          ),
+          errorStyle: GoogleFonts.poppins(fontSize: 11, height: 1.1),
           hintText: hint,
-          hintStyle:
-              GoogleFonts.poppins(
-            fontSize: 13,
-            color: AppColors.muted,
-          ),
-          prefixIcon: Icon(
-            icon,
-            color: AppColors.brand,
-            size: 24,
-          ),
+          hintStyle: GoogleFonts.poppins(fontSize: 13, color: AppColors.muted),
+          prefixIcon: Icon(icon, color: AppColors.brand, size: 24),
           suffixIcon: suffix,
           border: InputBorder.none,
-          enabledBorder:
-              InputBorder.none,
-          focusedBorder:
-              OutlineInputBorder(
-            borderRadius:
-                BorderRadius.circular(14),
-            borderSide:
-                const BorderSide(
-              color: AppColors.brand,
-              width: 2,
-            ),
+          enabledBorder: InputBorder.none,
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: AppColors.brand, width: 2),
           ),
-          errorBorder:
-              OutlineInputBorder(
-            borderRadius:
-                BorderRadius.circular(14),
-            borderSide:
-                const BorderSide(
-              color: Color(0xFFB3261E),
-              width: 1.5,
-            ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: Color(0xFFB3261E), width: 1.5),
           ),
-          focusedErrorBorder:
-              OutlineInputBorder(
-            borderRadius:
-                BorderRadius.circular(14),
-            borderSide:
-                const BorderSide(
-              color: Color(0xFFB3261E),
-              width: 2,
-            ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: Color(0xFFB3261E), width: 2),
           ),
-          contentPadding:
-              const EdgeInsets.symmetric(
-            vertical: 14,
-          ),
+          contentPadding: const EdgeInsets.symmetric(vertical: 14),
         ),
       ),
     );
   }
 }
 
-class _SocialButton
-    extends StatelessWidget {
+class _SocialButton extends StatelessWidget {
   const _SocialButton({
     required this.child,
     required this.onTap,
@@ -787,24 +629,17 @@ class _SocialButton
       child: Material(
         color: AppColors.card,
         elevation: 2,
-        borderRadius:
-            BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(10),
         child: InkWell(
           onTap: onTap,
-          borderRadius:
-              BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(10),
           child: Container(
             width: 66,
             height: 32,
             alignment: Alignment.center,
-            decoration:
-                BoxDecoration(
-              borderRadius:
-                  BorderRadius.circular(10),
-              border: Border.all(
-                color: AppColors.muted,
-                width: 1,
-              ),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.muted, width: 1),
             ),
             child: child,
           ),
@@ -815,9 +650,7 @@ class _SocialButton
 }
 
 class _Dot extends StatelessWidget {
-  const _Dot({
-    required this.size,
-  });
+  const _Dot({required this.size});
 
   final double size;
 
@@ -826,8 +659,7 @@ class _Dot extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration:
-          const BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppColors.brandSoft,
         shape: BoxShape.circle,
       ),
