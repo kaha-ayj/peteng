@@ -30,6 +30,7 @@ flutter:
     - lib/assets/images/logo.png
     - lib/assets/images/logo_aja.png
     - lib/assets/images/logo_bulet.png
+    - lib/assets/images/logo_sejajar.png
 
   # To add assets to your package, add an assets section, like this:
   # assets:
