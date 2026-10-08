@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:peteng/services/auth_api.dart';
 import 'landing_page.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -33,6 +34,8 @@ class _SplashScreenState extends State<SplashScreen>
     _controller.forward();
 
     Future.delayed(const Duration(seconds: 3), () {
+      if (!mounted) return;
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const LandingPage()),

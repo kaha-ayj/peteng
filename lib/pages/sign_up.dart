@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'auth_store.dart';
+import 'package:peteng/services/auth_api.dart';
 
 class AppColors {
   static const brand = Color(0xFF172554);
@@ -55,29 +55,37 @@ class _SignUpPageState extends State<SignUpPage> {
       _isLoading = true;
     });
 
-    final ok = await AuthStore.instance.register(
-      nama: _namaC.text.trim(),
-      telepon: _teleponC.text.trim(),
-      email: _emailC.text.trim().toLowerCase(),
-      password: _passC.text,
-    );
-
-    if (!mounted) return;
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    if (!ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Registrasi gagal. Email mungkin sudah terdaftar atau server tidak dapat dihubungi.',
-          ),
-        ),
+    try {
+      await AuthApi.register(
+        nama: _namaC.text.trim(),
+        nomorTelepon: _teleponC.text.trim(),
+        email: _emailC.text.trim().toLowerCase(),
+        password: _passC.text,
       );
 
-      return;
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sign up berhasil. Silakan Login.')),
+      );
+
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
     }
 
     ScaffoldMessenger.of(context).showSnackBar(

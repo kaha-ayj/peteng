@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'auth_store.dart';
+import 'package:peteng/services/auth_api.dart';
 import 'sign_up.dart';
 import 'home.dart';
 
@@ -54,48 +54,32 @@ class _LoginPageState extends State<LoginPage> {
       _isLoading = true;
     });
 
-    final result = await AuthStore.instance.login(
-      email: _emailC.text.trim(),
-      password: _passC.text,
-    );
+    try {
+      await AuthApi.login(
+        email: _emailC.text.trim().toLowerCase(),
+        password: _passC.text,
+      );
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    setState(() {
-      _isLoading = false;
-    });
+      setState(() {
+        _isLoading = false;
+      });
 
-    switch (result) {
-      case LoginResult.success:
-        // JWT sudah disimpan oleh AuthStore.
-        //
-        // SharedPreferences:
-        // jwt_token = JWT
-        // app_user = data user
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const Home()),
+        (route) => false,
+      );
+    } catch (e) {
+      if (!mounted) return;
 
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const Home()),
-          (route) => false,
-        );
-        break;
+      setState(() {
+        _isLoading = false;
+      });
 
-      case LoginResult.notRegistered:
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Email belum terdaftar.')));
-        break;
-
-      case LoginResult.wrongPassword:
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Password salah.')));
-        break;
-
-      case LoginResult.networkError:
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Tidak dapat terhubung ke server.')),
-        );
-        break;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
     }
   }
 
