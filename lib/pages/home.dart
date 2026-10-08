@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class AppColors {
   static const brand = Color(0xFF172554);
@@ -45,8 +50,6 @@ class _HomeState extends State<Home> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Padding kiri saja (tanpa kanan) supaya _ActionPill di
-                // dalam _GreetingRow bisa nempel ke tepi kanan layar.
                 const Padding(
                   padding: EdgeInsets.only(left: 20),
                   child: _TopBar(),
@@ -124,8 +127,6 @@ class _TopBar extends StatelessWidget {
   }
 }
 
-/// Baris sapaan + lokasi di kiri, dan pill ikon aksi di kanan.
-/// PLACEHOLDER: nama "Rei" dan alamat masih teks statis.
 class _GreetingRow extends StatelessWidget {
   const _GreetingRow();
 
@@ -186,8 +187,6 @@ class _ActionPill extends StatelessWidget {
       padding: const EdgeInsets.only(left: 10, right: 16, top: 6, bottom: 6),
       decoration: BoxDecoration(
         color: AppColors.brand,
-        // Cuma sudut kiri yang dibulatkan — sisi kanan nempel rata ke
-        // tepi layar, jadi tidak perlu ikut dibulatkan.
         borderRadius: const BorderRadius.horizontal(left: Radius.circular(30)),
         boxShadow: [
           BoxShadow(
@@ -231,7 +230,6 @@ class _PillIcon extends StatelessWidget {
   }
 }
 
-/// Kartu putih fitur utama: "Pemetaan & Rekomendasi Rute Area Gelap".
 class _FeatureCard extends StatelessWidget {
   const _FeatureCard();
 
@@ -275,7 +273,6 @@ class _FeatureCard extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           ElevatedButton(
-            // TODO: sambungkan ke alur pencarian rute aman.
             onPressed: () {},
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.brand,
@@ -324,9 +321,122 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-/// Kartu putih: kolom lokasi & tujuan, pratinjau peta, tombol cari rute.
-class _RouteCard extends StatelessWidget {
+class _RouteCard extends StatefulWidget {
   const _RouteCard();
+
+  @override
+  State<_RouteCard> createState() => _RouteCardState();
+}
+
+class _RouteCardState extends State<_RouteCard> {
+  final MapController _mapController = MapController();
+
+  LatLng? _origin;
+  String? _originLabel;
+  LatLng? _dest;
+  String? _destLabel;
+  bool _locating = false;
+
+  @override
+  void dispose() {
+    _mapController.dispose();
+    super.dispose();
+  }
+
+  void _snack(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  /// "Lokasi anda": ambil posisi GPS perangkat.
+  Future<void> _useMyLocation() async {
+    if (_locating) return;
+    setState(() => _locating = true);
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        _snack('GPS/Layanan lokasi mati. Aktifkan dulu di pengaturan HP.');
+        return;
+      }
+      var perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied) {
+        perm = await Geolocator.requestPermission();
+      }
+      if (perm == LocationPermission.denied) {
+        _snack('Izin lokasi ditolak, jadi lokasi kamu tidak bisa diambil.');
+        return;
+      }
+      if (perm == LocationPermission.deniedForever) {
+        _snack(
+          'Izin lokasi diblokir. Aktifkan lewat Pengaturan > Aplikasi > peteng > Izin.',
+        );
+        return;
+      }
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 15),
+        ),
+      );
+      if (!mounted) return;
+      setState(() {
+        _origin = LatLng(pos.latitude, pos.longitude);
+        _originLabel = 'Lokasi saat ini';
+      });
+      _refocusMap();
+    } catch (e) {
+      _snack('Gagal mengambil lokasi. Coba lagi.');
+      debugPrint('LOCATION ERROR: $e');
+    } finally {
+      if (mounted) setState(() => _locating = false);
+    }
+  }
+
+  /// "Tujuan Lokasi": buka pencarian tempat.
+  Future<void> _pickDestination() async {
+    final result = await showModalBottomSheet<_PlaceResult>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => const _PlaceSearchSheet(),
+    );
+    if (result == null || !mounted) return;
+    setState(() {
+      _dest = result.point;
+      _destLabel = result.name;
+    });
+    _refocusMap();
+  }
+
+  /// Geser/zoom peta supaya titik yang dipilih kelihatan.
+  void _refocusMap() {
+    final o = _origin;
+    final d = _dest;
+    if (o != null && d != null && o != d) {
+      _mapController.fitCamera(
+        CameraFit.bounds(
+          bounds: LatLngBounds(o, d),
+          padding: const EdgeInsets.all(40),
+        ),
+      );
+    } else {
+      _mapController.move((d ?? o)!, 15);
+    }
+  }
+
+  void _searchRoute() {
+    if (_origin == null || _dest == null) {
+      _snack('Pilih "Lokasi anda" dan "Tujuan Lokasi" dulu.');
+      return;
+    }
+    // TODO: kirim _origin & _dest ke backend untuk hitung rute aman,
+    // lalu gambar hasilnya di peta sebagai Polyline.
+    _snack('Pencarian rute belum tersambung ke backend.');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -346,28 +456,30 @@ class _RouteCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // TODO: ganti dengan field pencarian lokasi sungguhan
-          // (mis. Google Places Autocomplete) saat integrasi peta/API siap.
           _LocationPill(
             icon: Icons.my_location,
-            label: 'Lokasi anda',
-            onTap: () {},
+            label: _originLabel ?? 'Lokasi anda',
+            loading: _locating,
+            onTap: _useMyLocation,
           ),
           const SizedBox(height: 10),
           _LocationPill(
             icon: Icons.search,
-            label: 'Tujuan Lokasi',
-            onTap: () {},
+            label: _destLabel ?? 'Tujuan Lokasi',
+            onTap: _pickDestination,
           ),
           const SizedBox(height: 14),
-          const _MapPreview(),
+          _RealMap(
+            controller: _mapController,
+            origin: _origin,
+            destination: _dest,
+          ),
           const SizedBox(height: 14),
           SizedBox(
             width: double.infinity,
             height: 46,
             child: ElevatedButton(
-              // TODO: sambungkan ke logika pencarian rute aman sungguhan.
-              onPressed: () {},
+              onPressed: _searchRoute,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.brand,
                 foregroundColor: Colors.white,
@@ -396,10 +508,12 @@ class _LocationPill extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
+    this.loading = false,
   });
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final bool loading;
 
   @override
   Widget build(BuildContext context) {
@@ -408,7 +522,7 @@ class _LocationPill extends StatelessWidget {
       borderRadius: BorderRadius.circular(30),
       child: InkWell(
         borderRadius: BorderRadius.circular(30),
-        onTap: onTap,
+        onTap: loading ? null : onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
           child: Row(
@@ -416,13 +530,25 @@ class _LocationPill extends StatelessWidget {
               Expanded(
                 child: Text(
                   label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.poppins(
                     fontSize: 13.5,
                     color: Colors.white.withOpacity(.9),
                   ),
                 ),
               ),
-              Icon(icon, size: 18, color: Colors.white),
+              if (loading)
+                const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              else
+                Icon(icon, size: 18, color: Colors.white),
             ],
           ),
         ),
@@ -431,36 +557,66 @@ class _LocationPill extends StatelessWidget {
   }
 }
 
-/// PLACEHOLDER: pratinjau peta statis. Ganti dengan widget peta
-/// sungguhan (Google Maps / Mapbox / dsb.) saat integrasi API siap.
-class _MapPreview extends StatelessWidget {
-  const _MapPreview();
+/// Peta OpenStreetMap (flutter_map), berpusat di Kabupaten Indramayu.
+/// Menampilkan marker "Lokasi anda" (biru) dan "Tujuan" (merah) kalau sudah dipilih.
+class _RealMap extends StatelessWidget {
+  const _RealMap({
+    required this.controller,
+    required this.origin,
+    required this.destination,
+  });
+
+  final MapController controller;
+  final LatLng? origin;
+  final LatLng? destination;
+
+  // Titik tengah Kabupaten Indramayu (perkiraan pusat kota/alun-alun).
+  static const LatLng _indramayuCenter = LatLng(-6.3267, 108.3214);
 
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
-      child: Container(
-        height: 170,
+      child: SizedBox(
+        height: 190,
         width: double.infinity,
-        color: const Color(0xFFDCE6D5),
-        child: Stack(
-          alignment: Alignment.center,
+        child: FlutterMap(
+          mapController: controller,
+          options: const MapOptions(
+            initialCenter: _indramayuCenter,
+            initialZoom: 13,
+          ),
           children: [
-            Icon(
-              Icons.map_outlined,
-              size: 40,
-              color: AppColors.brand.withOpacity(.35),
+            TileLayer(
+              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+              userAgentPackageName: 'id.peteng.app',
             ),
-            Positioned(
-              bottom: 10,
-              child: Text(
-                'ini untuk peta - belum di sambungin',
-                style: GoogleFonts.poppins(
-                  fontSize: 10,
-                  color: AppColors.brand.withOpacity(.6),
-                ),
-              ),
+            MarkerLayer(
+              markers: [
+                if (origin != null)
+                  Marker(
+                    point: origin!,
+                    width: 40,
+                    height: 40,
+                    child: const Icon(
+                      Icons.my_location,
+                      color: Color(0xFF1565C0),
+                      size: 30,
+                    ),
+                  ),
+                if (destination != null)
+                  Marker(
+                    point: destination!,
+                    width: 40,
+                    height: 40,
+                    alignment: Alignment.topCenter,
+                    child: const Icon(
+                      Icons.location_on,
+                      color: Color(0xFFD32F2F),
+                      size: 38,
+                    ),
+                  ),
+              ],
             ),
           ],
         ),
@@ -469,7 +625,188 @@ class _MapPreview extends StatelessWidget {
   }
 }
 
-/// Navigasi bawah: Home, Peta & Rute, Lapor, Artikel.
+class _PlaceResult {
+  const _PlaceResult(this.name, this.point);
+  final String name;
+  final LatLng point;
+}
+
+/// Bottom sheet pencarian tujuan, pakai Nominatim (geocoder gratis milik
+/// OpenStreetMap). Pencarian dijalankan saat tombol cari/enter ditekan —
+/// BUKAN tiap ketikan — karena kebijakan Nominatim melarang autocomplete
+/// dan membatasi 1 request per detik:
+/// https://operations.osmfoundation.org/policies/nominatim/
+class _PlaceSearchSheet extends StatefulWidget {
+  const _PlaceSearchSheet();
+
+  @override
+  State<_PlaceSearchSheet> createState() => _PlaceSearchSheetState();
+}
+
+class _PlaceSearchSheetState extends State<_PlaceSearchSheet> {
+  final _c = TextEditingController();
+  List<_PlaceResult> _results = [];
+  bool _loading = false;
+  String? _message;
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  Future<void> _search() async {
+    final q = _c.text.trim();
+    if (q.length < 3) {
+      setState(() => _message = 'Ketik minimal 3 huruf.');
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _message = null;
+      _results = [];
+    });
+    try {
+      // Dibatasi ke area Kabupaten Indramayu (bounded=1). Kalau mau cari di
+      // seluruh Indonesia, hapus viewbox & bounded.
+      final uri = Uri.https('nominatim.openstreetmap.org', '/search', {
+        'q': q,
+        'format': 'jsonv2',
+        'limit': '8',
+        'countrycodes': 'id',
+        'viewbox': '107.85,-6.0,108.65,-6.75',
+        'bounded': '1',
+      });
+      final res = await http
+          .get(uri, headers: {'User-Agent': 'id.peteng.app'})
+          .timeout(const Duration(seconds: 12));
+      if (res.statusCode != 200) {
+        setState(() => _message = 'Pencarian gagal (kode ${res.statusCode}).');
+        return;
+      }
+      final list = jsonDecode(res.body) as List<dynamic>;
+      final results = list.map((e) {
+        final m = e as Map<String, dynamic>;
+        return _PlaceResult(
+          (m['display_name'] as String?) ?? 'Tanpa nama',
+          LatLng(
+            double.parse(m['lat'] as String),
+            double.parse(m['lon'] as String),
+          ),
+        );
+      }).toList();
+      setState(() {
+        _results = results;
+        if (results.isEmpty) {
+          _message =
+              'Tidak ada hasil di wilayah Indramayu. Coba kata kunci lain.';
+        }
+      });
+    } catch (e) {
+      debugPrint('SEARCH ERROR: $e');
+      if (mounted)
+        setState(() => _message = 'Tidak bisa terhubung. Cek internet.');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.of(context).viewInsets.bottom;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottom),
+      child: SizedBox(
+        height: 380,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Cari tujuan',
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppColors.brand,
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _c,
+              autofocus: true,
+              textInputAction: TextInputAction.search,
+              onSubmitted: (_) => _search(),
+              style: GoogleFonts.poppins(fontSize: 14),
+              decoration: InputDecoration(
+                hintText: 'Nama jalan, tempat, atau desa',
+                hintStyle: GoogleFonts.poppins(
+                  fontSize: 13,
+                  color: AppColors.muted,
+                ),
+                filled: true,
+                fillColor: AppColors.card,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.search, color: AppColors.brand),
+                  onPressed: _search,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            if (_loading)
+              const Padding(
+                padding: EdgeInsets.only(top: 24),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (_message != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text(
+                  _message!,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12.5,
+                    color: AppColors.muted,
+                  ),
+                ),
+              )
+            else
+              Expanded(
+                child: ListView.separated(
+                  itemCount: _results.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (_, i) {
+                    final r = _results[i];
+                    return ListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(
+                        Icons.place_outlined,
+                        color: AppColors.brand,
+                      ),
+                      title: Text(
+                        r.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.poppins(fontSize: 12.5),
+                      ),
+                      onTap: () => Navigator.of(context).pop(r),
+                    );
+                  },
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _BottomNav extends StatelessWidget {
   const _BottomNav({required this.index, required this.onTap});
   final int index;
@@ -626,7 +963,7 @@ class _LightTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AspectRatio(
-      aspectRatio: 1.4, // lebih pendek dari lebar, tidak lagi persegi penuh
+      aspectRatio: 1.4,
       child: Container(
         decoration: BoxDecoration(
           color: color,
