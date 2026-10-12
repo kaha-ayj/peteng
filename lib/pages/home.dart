@@ -4,8 +4,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:peteng/services/route_api.dart';
+import 'place_search.dart';
+import 'peta_rute.dart';
+import 'lapor.dart';
 
 class AppColors {
   static const brand = Color(0xFF172554);
@@ -28,6 +30,18 @@ class _HomeState extends State<Home> {
   int _navIndex = 0;
 
   void _onNavTap(int i) {
+    if (i == 1) {
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const PetaRutePage()));
+      return;
+    }
+    if (i == 2) {
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const LaporPage()));
+      return;
+    }
     setState(() => _navIndex = i);
   }
 
@@ -83,7 +97,7 @@ class _HomeState extends State<Home> {
             ),
           ),
         ),
-        bottomNavigationBar: _BottomNav(index: _navIndex, onTap: _onNavTap),
+        bottomNavigationBar: AppBottomNav(index: _navIndex, onTap: _onNavTap),
       ),
     );
   }
@@ -273,7 +287,9 @@ class _FeatureCard extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           ElevatedButton(
-            onPressed: () {},
+            onPressed: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const PetaRutePage())),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.brand,
               foregroundColor: Colors.white,
@@ -337,6 +353,10 @@ class _RouteCardState extends State<_RouteCard> {
   String? _destLabel;
   bool _locating = false;
 
+  List<RouteOption> _routes = [];
+  int _selectedRoute = 0;
+  bool _searching = false;
+
   @override
   void dispose() {
     _mapController.dispose();
@@ -383,6 +403,7 @@ class _RouteCardState extends State<_RouteCard> {
       setState(() {
         _origin = LatLng(pos.latitude, pos.longitude);
         _originLabel = 'Lokasi saat ini';
+        _routes = [];
       });
       _refocusMap();
     } catch (e) {
@@ -395,19 +416,20 @@ class _RouteCardState extends State<_RouteCard> {
 
   /// "Tujuan Lokasi": buka pencarian tempat.
   Future<void> _pickDestination() async {
-    final result = await showModalBottomSheet<_PlaceResult>(
+    final result = await showModalBottomSheet<PlaceResult>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => const _PlaceSearchSheet(),
+      builder: (_) => const PlaceSearchSheet(),
     );
     if (result == null || !mounted) return;
     setState(() {
       _dest = result.point;
       _destLabel = result.name;
+      _routes = [];
     });
     _refocusMap();
   }
@@ -428,14 +450,39 @@ class _RouteCardState extends State<_RouteCard> {
     }
   }
 
-  void _searchRoute() {
+  Future<void> _searchRoute() async {
+    if (_searching) return;
     if (_origin == null || _dest == null) {
       _snack('Pilih "Lokasi anda" dan "Tujuan Lokasi" dulu.');
       return;
     }
-    // TODO: kirim _origin & _dest ke backend untuk hitung rute aman,
-    // lalu gambar hasilnya di peta sebagai Polyline.
-    _snack('Pencarian rute belum tersambung ke backend.');
+    setState(() => _searching = true);
+    try {
+      final routes = await RouteApi.cari(asal: _origin!, tujuan: _dest!);
+      if (!mounted) return;
+      setState(() {
+        _routes = routes;
+        _selectedRoute = 0;
+      });
+      _fitSelectedRoute();
+    } on RouteException catch (e) {
+      _snack(e.message);
+    } catch (e) {
+      debugPrint('ROUTE ERROR: $e');
+      _snack('Terjadi kesalahan saat mencari rute.');
+    } finally {
+      if (mounted) setState(() => _searching = false);
+    }
+  }
+
+  void _fitSelectedRoute() {
+    if (_routes.isEmpty) return;
+    _mapController.fitCamera(
+      CameraFit.coordinates(
+        coordinates: _routes[_selectedRoute].titik,
+        padding: const EdgeInsets.all(40),
+      ),
+    );
   }
 
   @override
@@ -473,13 +520,59 @@ class _RouteCardState extends State<_RouteCard> {
             controller: _mapController,
             origin: _origin,
             destination: _dest,
+            routes: _routes,
+            selectedRoute: _selectedRoute,
           ),
+          if (_routes.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: [
+                  for (var i = 0; i < _routes.length; i++)
+                    ChoiceChip(
+                      label: Text(
+                        'Rute ${i + 1} · ${_routes[i].jarakLabel} · ${_routes[i].durasiLabel}',
+                        style: GoogleFonts.poppins(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: i == _selectedRoute
+                              ? Colors.white
+                              : AppColors.brand,
+                        ),
+                      ),
+                      selected: i == _selectedRoute,
+                      selectedColor: AppColors.brand,
+                      backgroundColor: AppColors.card,
+                      showCheckmark: false,
+                      onSelected: (_) {
+                        setState(() => _selectedRoute = i);
+                        _fitSelectedRoute();
+                      },
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 6),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Rute jalan tercepat. Penilaian penerangan belum aktif.',
+                style: GoogleFonts.poppins(
+                  fontSize: 10.5,
+                  color: AppColors.muted,
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 14),
           SizedBox(
             width: double.infinity,
             height: 46,
             child: ElevatedButton(
-              onPressed: _searchRoute,
+              onPressed: _searching ? null : _searchRoute,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.brand,
                 foregroundColor: Colors.white,
@@ -488,13 +581,22 @@ class _RouteCardState extends State<_RouteCard> {
                   borderRadius: BorderRadius.circular(14),
                 ),
               ),
-              child: Text(
-                'Cari rute aman',
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              child: _searching
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Text(
+                      'Cari rute aman',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
             ),
           ),
         ],
@@ -564,11 +666,15 @@ class _RealMap extends StatelessWidget {
     required this.controller,
     required this.origin,
     required this.destination,
+    this.routes = const [],
+    this.selectedRoute = 0,
   });
 
   final MapController controller;
   final LatLng? origin;
   final LatLng? destination;
+  final List<RouteOption> routes;
+  final int selectedRoute;
 
   // Titik tengah Kabupaten Indramayu (perkiraan pusat kota/alun-alun).
   static const LatLng _indramayuCenter = LatLng(-6.3267, 108.3214);
@@ -591,6 +697,24 @@ class _RealMap extends StatelessWidget {
               urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
               userAgentPackageName: 'id.peteng.app',
             ),
+            if (routes.isNotEmpty)
+              PolylineLayer(
+                polylines: [
+                  // Rute alternatif (abu-abu) digambar dulu, rute terpilih di atasnya.
+                  for (var i = 0; i < routes.length; i++)
+                    if (i != selectedRoute)
+                      Polyline(
+                        points: routes[i].titik,
+                        strokeWidth: 4,
+                        color: const Color(0xFF9AA0B5),
+                      ),
+                  Polyline(
+                    points: routes[selectedRoute].titik,
+                    strokeWidth: 6,
+                    color: AppColors.brand,
+                  ),
+                ],
+              ),
             MarkerLayer(
               markers: [
                 if (origin != null)
@@ -625,190 +749,10 @@ class _RealMap extends StatelessWidget {
   }
 }
 
-class _PlaceResult {
-  const _PlaceResult(this.name, this.point);
-  final String name;
-  final LatLng point;
-}
-
-/// Bottom sheet pencarian tujuan, pakai Nominatim (geocoder gratis milik
-/// OpenStreetMap). Pencarian dijalankan saat tombol cari/enter ditekan —
-/// BUKAN tiap ketikan — karena kebijakan Nominatim melarang autocomplete
-/// dan membatasi 1 request per detik:
-/// https://operations.osmfoundation.org/policies/nominatim/
-class _PlaceSearchSheet extends StatefulWidget {
-  const _PlaceSearchSheet();
-
-  @override
-  State<_PlaceSearchSheet> createState() => _PlaceSearchSheetState();
-}
-
-class _PlaceSearchSheetState extends State<_PlaceSearchSheet> {
-  final _c = TextEditingController();
-  List<_PlaceResult> _results = [];
-  bool _loading = false;
-  String? _message;
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-
-  Future<void> _search() async {
-    final q = _c.text.trim();
-    if (q.length < 3) {
-      setState(() => _message = 'Ketik minimal 3 huruf.');
-      return;
-    }
-    setState(() {
-      _loading = true;
-      _message = null;
-      _results = [];
-    });
-    try {
-      // Dibatasi ke area Kabupaten Indramayu (bounded=1). Kalau mau cari di
-      // seluruh Indonesia, hapus viewbox & bounded.
-      final uri = Uri.https('nominatim.openstreetmap.org', '/search', {
-        'q': q,
-        'format': 'jsonv2',
-        'limit': '8',
-        'countrycodes': 'id',
-        'viewbox': '107.85,-6.0,108.65,-6.75',
-        'bounded': '1',
-      });
-      final res = await http
-          .get(uri, headers: {'User-Agent': 'id.peteng.app'})
-          .timeout(const Duration(seconds: 12));
-      if (res.statusCode != 200) {
-        setState(() => _message = 'Pencarian gagal (kode ${res.statusCode}).');
-        return;
-      }
-      final list = jsonDecode(res.body) as List<dynamic>;
-      final results = list.map((e) {
-        final m = e as Map<String, dynamic>;
-        return _PlaceResult(
-          (m['display_name'] as String?) ?? 'Tanpa nama',
-          LatLng(
-            double.parse(m['lat'] as String),
-            double.parse(m['lon'] as String),
-          ),
-        );
-      }).toList();
-      setState(() {
-        _results = results;
-        if (results.isEmpty) {
-          _message =
-              'Tidak ada hasil di wilayah Indramayu. Coba kata kunci lain.';
-        }
-      });
-    } catch (e) {
-      debugPrint('SEARCH ERROR: $e');
-      if (mounted)
-        setState(() => _message = 'Tidak bisa terhubung. Cek internet.');
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final bottom = MediaQuery.of(context).viewInsets.bottom;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottom),
-      child: SizedBox(
-        height: 380,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Cari tujuan',
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppColors.brand,
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _c,
-              autofocus: true,
-              textInputAction: TextInputAction.search,
-              onSubmitted: (_) => _search(),
-              style: GoogleFonts.poppins(fontSize: 14),
-              decoration: InputDecoration(
-                hintText: 'Nama jalan, tempat, atau desa',
-                hintStyle: GoogleFonts.poppins(
-                  fontSize: 13,
-                  color: AppColors.muted,
-                ),
-                filled: true,
-                fillColor: AppColors.card,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide.none,
-                ),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.search, color: AppColors.brand),
-                  onPressed: _search,
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
-            if (_loading)
-              const Padding(
-                padding: EdgeInsets.only(top: 24),
-                child: Center(child: CircularProgressIndicator()),
-              )
-            else if (_message != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: Text(
-                  _message!,
-                  style: GoogleFonts.poppins(
-                    fontSize: 12.5,
-                    color: AppColors.muted,
-                  ),
-                ),
-              )
-            else
-              Expanded(
-                child: ListView.separated(
-                  itemCount: _results.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
-                  itemBuilder: (_, i) {
-                    final r = _results[i];
-                    return ListTile(
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(
-                        Icons.place_outlined,
-                        color: AppColors.brand,
-                      ),
-                      title: Text(
-                        r.name,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.poppins(fontSize: 12.5),
-                      ),
-                      onTap: () => Navigator.of(context).pop(r),
-                    );
-                  },
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _BottomNav extends StatelessWidget {
-  const _BottomNav({required this.index, required this.onTap});
+/// Bottom navigation bersama. Dipakai di Home, Lapor, dan halaman lain
+/// supaya tampilannya konsisten. `index` = tab yang sedang aktif.
+class AppBottomNav extends StatelessWidget {
+  const AppBottomNav({super.key, required this.index, required this.onTap});
   final int index;
   final ValueChanged<int> onTap;
 
