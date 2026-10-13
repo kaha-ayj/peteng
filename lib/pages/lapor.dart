@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
@@ -108,8 +109,10 @@ class _LaporPageState extends State<LaporPage> {
   String? _awalLabel;
   LatLng? _akhir;
   String? _akhirLabel;
-  double _panjang = 100;
-  bool _panjangDariJarak = false;
+  double?
+  _jarakLurus; // panjang ruas gelap (meter), terisi otomatis dari dua titik
+  final MapController _segMap = MapController();
+  DateTime? _geoTerakhir; // pembatas 1 permintaan/detik ke Nominatim
 
   String? _kategori;
   int _tingkatDipilih = 0;
@@ -124,6 +127,7 @@ class _LaporPageState extends State<LaporPage> {
   @override
   void dispose() {
     _keteranganC.dispose();
+    _segMap.dispose();
     super.dispose();
   }
 
@@ -207,6 +211,11 @@ class _LaporPageState extends State<LaporPage> {
         _gps = _GpsState.ok;
         _alamat = null;
       });
+      if (_awal == null && _akhir == null) {
+        try {
+          _segMap.move(ll, 16);
+        } catch (_) {}
+      }
       final alamat = await _reverseGeocode(ll);
       if (mounted && _pos == ll) setState(() => _alamat = alamat);
     } catch (e) {
@@ -320,16 +329,80 @@ class _LaporPageState extends State<LaporPage> {
     _hitungPanjang();
   }
 
-  /// Perkiraan awal = jarak garis lurus antar dua titik (BUKAN panjang jalan
-  /// sebenarnya), lalu pengguna bisa menyesuaikan dengan slider.
-  void _hitungPanjang() {
+  /// Panjang ruas gelap dihitung otomatis begitu titik awal & akhir terisi.
+  /// Ini jarak garis lurus antar dua titik (BUKAN panjang jalan sebenarnya).
+  void _hitungPanjang({bool fit = true}) {
     final a = _awal;
     final b = _akhir;
-    if (a == null || b == null) return;
+    if (a == null || b == null) {
+      setState(() => _jarakLurus = null);
+      if (fit) _fitSegmen();
+      return;
+    }
     final m = const Distance().as(LengthUnit.Meter, a, b);
+    setState(() => _jarakLurus = m);
+    if (fit) _fitSegmen();
+  }
+
+  /// Geser/zoom peta segmen supaya titik yang dipilih kelihatan.
+  void _fitSegmen() {
+    final a = _awal;
+    final b = _akhir;
+    try {
+      if (a != null && b != null && a != b) {
+        _segMap.fitCamera(
+          CameraFit.coordinates(
+            coordinates: [a, b],
+            padding: const EdgeInsets.all(48),
+          ),
+        );
+      } else if (a != null || b != null) {
+        _segMap.move((a ?? b)!, 16);
+      }
+    } catch (e) {
+      debugPrint('FIT SEGMEN ERROR: $e');
+    }
+  }
+
+  /// Peta diketuk. Tanpa tombol pilihan: ketukan pertama = titik awal,
+  /// kedua = titik akhir, berikutnya menggeser titik yang paling dekat
+  /// dengan ketukan.
+  Future<void> _setTitikDariPeta(LatLng p) async {
+    final bool untukAwal;
+    if (_awal == null) {
+      untukAwal = true;
+    } else if (_akhir == null) {
+      untukAwal = false;
+    } else {
+      const jarak = Distance();
+      untukAwal =
+          jarak.as(LengthUnit.Meter, p, _awal!) <=
+          jarak.as(LengthUnit.Meter, p, _akhir!);
+    }
     setState(() {
-      _panjang = m.clamp(50.0, 3000.0).toDouble();
-      _panjangDariJarak = true;
+      if (untukAwal) {
+        _awal = p;
+        _awalLabel = _formatKoordinat(p);
+      } else {
+        _akhir = p;
+        _akhirLabel = _formatKoordinat(p);
+      }
+    });
+    _hitungPanjang(fit: false); // jangan geser peta di bawah jari pengguna
+
+    // Nama jalan: maks 1 permintaan/detik (kebijakan Nominatim).
+    final sekarang = DateTime.now();
+    final terakhir = _geoTerakhir;
+    if (terakhir != null &&
+        sekarang.difference(terakhir) < const Duration(milliseconds: 1100)) {
+      return;
+    }
+    _geoTerakhir = sekarang;
+    final label = await _reverseGeocode(p);
+    if (!mounted || label == null) return;
+    setState(() {
+      if (untukAwal && _awal == p) _awalLabel = label;
+      if (!untukAwal && _akhir == p) _akhirLabel = label;
     });
   }
 
@@ -364,7 +437,7 @@ class _LaporPageState extends State<LaporPage> {
         alamat: _alamat,
         awalLabel: _awalLabel,
         akhirLabel: _akhirLabel,
-        panjangM: (_awal != null && _akhir != null) ? _panjang : null,
+        panjangM: (_awal != null && _akhir != null) ? _jarakLurus : null,
       ),
     );
     if (!mounted) return;
@@ -791,14 +864,14 @@ class _LaporPageState extends State<LaporPage> {
   }
 
   Widget _segmenCard() {
-    final bisaAtur = _awal != null && _akhir != null;
+    final jarak = _jarakLurus;
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionHeader(
             Icons.alt_route,
-            'Segmen Jalur Berbahaya',
+            'Segmen Jalur Gelap',
             trailing: const _MiniChip(text: 'OPSIONAL', fg: AppColors.muted),
           ),
           const SizedBox(height: 12),
@@ -822,6 +895,19 @@ class _LaporPageState extends State<LaporPage> {
             onGps: () => _pakaiGps(awal: false),
           ),
           const SizedBox(height: 14),
+          _SegmenMap(
+            controller: _segMap,
+            awal: _awal,
+            akhir: _akhir,
+            pusat: _pos,
+            petunjuk: _awal == null
+                ? 'Ketuk peta: titik awal'
+                : _akhir == null
+                ? 'Ketuk peta: titik akhir'
+                : 'Ketuk peta: geser titik terdekat',
+            onTap: _setTitikDariPeta,
+          ),
+          const SizedBox(height: 14),
           Row(
             children: [
               Expanded(
@@ -835,24 +921,14 @@ class _LaporPageState extends State<LaporPage> {
                 ),
               ),
               _MiniChip(
-                text: bisaAtur ? '${_panjang.round()} Meter' : '— Meter',
+                text: jarak != null ? '${_fmtM(jarak)} Meter' : '— Meter',
                 fg: AppColors.brand,
               ),
             ],
           ),
-          Slider(
-            value: _panjang,
-            min: 50,
-            max: 3000,
-            activeColor: AppColors.brand,
-            inactiveColor: AppColors.brand.withOpacity(.15),
-            onChanged: bisaAtur
-                ? (v) => setState(() {
-                    _panjang = v;
-                    _panjangDariJarak = false;
-                  })
-                : null,
-          ),
+          const SizedBox(height: 10),
+          _BatangRuas(meter: jarak),
+          const SizedBox(height: 6),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -868,31 +944,51 @@ class _LaporPageState extends State<LaporPage> {
             ],
           ),
           const SizedBox(height: 10),
-          if (!bisaAtur)
+          if (jarak == null)
             Text(
-              'Pilih titik awal & akhir untuk memperkirakan panjang ruas.',
+              'Pilih titik awal & akhir (lewat pencarian, GPS, atau ketuk peta) '
+              'untuk mengisi panjang ruas otomatis.',
+              style: GoogleFonts.poppins(
+                fontSize: 10.5,
+                color: AppColors.muted,
+                height: 1.4,
+              ),
+            )
+          else if (jarak < 5)
+            Text(
+              'Titik awal dan akhir hampir sama. Pilih titik akhir yang berbeda.',
+              style: GoogleFonts.poppins(
+                fontSize: 10.5,
+                color: _cRedup,
+                height: 1.4,
+              ),
+            )
+          else ...[
+            Text(
+              'Terisi otomatis dari jarak garis lurus antar dua titik.',
               style: GoogleFonts.poppins(
                 fontSize: 10.5,
                 color: AppColors.muted,
               ),
-            )
-          else ...[
-            if (_panjangDariJarak)
+            ),
+            if (jarak > 3000)
               Padding(
-                padding: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.only(top: 4),
                 child: Text(
-                  'Perkiraan awal = jarak garis lurus antar dua titik. Geser untuk menyesuaikan.',
+                  'Lebih dari 3.000 m, sebaiknya dipecah menjadi beberapa laporan.',
                   style: GoogleFonts.poppins(
                     fontSize: 10.5,
-                    color: AppColors.muted,
+                    color: _cRedup,
+                    height: 1.4,
                   ),
                 ),
               ),
+            const SizedBox(height: 10),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: _cGelap.withOpacity(.08),
+                color: _cGelap,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -900,17 +996,29 @@ class _LaporPageState extends State<LaporPage> {
                 children: [
                   const Icon(
                     Icons.warning_amber_rounded,
-                    size: 18,
-                    color: _cGelap,
+                    size: 20,
+                    color: Colors.white,
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 10),
                   Expanded(
-                    child: Text(
-                      'Ruas ±${_panjang.round()} m akan dilaporkan sebagai area minim penerangan.',
-                      style: GoogleFonts.poppins(
-                        fontSize: 11,
-                        color: _cGelap,
-                        height: 1.35,
+                    child: Text.rich(
+                      TextSpan(
+                        style: GoogleFonts.poppins(
+                          fontSize: 11.5,
+                          color: Colors.white,
+                          height: 1.4,
+                        ),
+                        children: [
+                          const TextSpan(text: 'Ruas '),
+                          TextSpan(
+                            text: '±${_fmtM(jarak)} m',
+                            style: const TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                          const TextSpan(
+                            text:
+                                ' tanpa penerangan aktif rawan kecelakaan di malam hari & minim saksi mata.',
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -1078,6 +1186,20 @@ class _LaporPageState extends State<LaporPage> {
 // Fungsi bantu
 // ----------------------------------------------------------------------
 
+String _formatKoordinat(LatLng p) =>
+    '${p.latitude.toStringAsFixed(5)}, ${p.longitude.toStringAsFixed(5)}';
+
+/// 1240 -> "1.240" (pemisah ribuan titik, gaya Indonesia).
+String _fmtM(num m) {
+  final s = m.round().toString();
+  final b = StringBuffer();
+  for (var i = 0; i < s.length; i++) {
+    if (i > 0 && (s.length - i) % 3 == 0) b.write('.');
+    b.write(s[i]);
+  }
+  return b.toString();
+}
+
 String _jam(DateTime d) =>
     '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')} ${d.timeZoneName}';
 
@@ -1190,6 +1312,176 @@ class _OverlayChip extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Batang panjang ruas (skala 50 m - 3.000 m). Hanya penunjuk, tidak bisa
+/// digeser: nilainya otomatis dari jarak antar titik awal & akhir.
+class _BatangRuas extends StatelessWidget {
+  const _BatangRuas({required this.meter});
+
+  final double? meter;
+
+  static const double _min = 50;
+  static const double _max = 3000;
+  static const double _tinggi = 12;
+  static const double _thumb = 20;
+
+  @override
+  Widget build(BuildContext context) {
+    final m = meter;
+    final fraksi = m == null
+        ? 0.0
+        : ((m - _min) / (_max - _min)).clamp(0.0, 1.0).toDouble();
+
+    return LayoutBuilder(
+      builder: (context, c) {
+        final w = c.maxWidth;
+        final isi = m == null
+            ? 0.0
+            : (w * fraksi < _tinggi ? _tinggi : w * fraksi);
+        final thumbKiri = (w * fraksi - _thumb / 2)
+            .clamp(0.0, w - _thumb)
+            .toDouble();
+        return SizedBox(
+          height: _thumb,
+          child: Stack(
+            alignment: Alignment.centerLeft,
+            children: [
+              Container(
+                height: _tinggi,
+                decoration: BoxDecoration(
+                  color: AppColors.brand.withOpacity(.12),
+                  borderRadius: BorderRadius.circular(_tinggi),
+                ),
+              ),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 350),
+                curve: Curves.easeOut,
+                width: isi,
+                height: _tinggi,
+                decoration: BoxDecoration(
+                  color: AppColors.brand,
+                  borderRadius: BorderRadius.circular(_tinggi),
+                ),
+              ),
+              if (m != null)
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 350),
+                  curve: Curves.easeOut,
+                  left: thumbKiri,
+                  child: Container(
+                    width: _thumb,
+                    height: _thumb,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.brand, width: 3),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Peta kecil untuk menandai awal & akhir ruas gelap. Diketuk = mengatur
+/// titik yang sedang dipilih (awal/akhir), garis menghubungkan keduanya.
+class _SegmenMap extends StatelessWidget {
+  const _SegmenMap({
+    required this.controller,
+    required this.awal,
+    required this.akhir,
+    required this.pusat,
+    required this.petunjuk,
+    required this.onTap,
+  });
+
+  final MapController controller;
+  final LatLng? awal;
+  final LatLng? akhir;
+  final LatLng? pusat; // posisi GPS pengguna (kalau sudah ada)
+  final String petunjuk; // teks petunjuk di pojok peta
+  final ValueChanged<LatLng> onTap;
+
+  static const LatLng _indramayu = LatLng(-6.3267, 108.3214);
+
+  @override
+  Widget build(BuildContext context) {
+    final adaTitik = awal != null || akhir != null || pusat != null;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: SizedBox(
+        height: 210,
+        width: double.infinity,
+        child: Stack(
+          children: [
+            FlutterMap(
+              mapController: controller,
+              options: MapOptions(
+                initialCenter: awal ?? akhir ?? pusat ?? _indramayu,
+                initialZoom: adaTitik ? 16 : 13,
+                onTap: (_, p) => onTap(p),
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'id.peteng.app',
+                ),
+                if (awal != null && akhir != null)
+                  PolylineLayer(
+                    polylines: [
+                      Polyline(
+                        points: [awal!, akhir!],
+                        strokeWidth: 4,
+                        color: _cGelap,
+                      ),
+                    ],
+                  ),
+                MarkerLayer(
+                  markers: [
+                    if (awal != null)
+                      Marker(
+                        point: awal!,
+                        width: 36,
+                        height: 36,
+                        child: const Icon(
+                          Icons.trip_origin,
+                          color: _cGelap,
+                          size: 28,
+                        ),
+                      ),
+                    if (akhir != null)
+                      Marker(
+                        point: akhir!,
+                        width: 40,
+                        height: 40,
+                        alignment: Alignment.topCenter,
+                        child: const Icon(
+                          Icons.location_on,
+                          color: AppColors.brand,
+                          size: 38,
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+            Positioned(
+              top: 8,
+              left: 8,
+              child: _OverlayChip(
+                icon: Icons.touch_app_outlined,
+                text: petunjuk,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
