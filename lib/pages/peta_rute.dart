@@ -5,7 +5,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
-
+import 'article_page.dart';
 import 'home.dart' show AppColors;
 import 'place_search.dart';
 import '../services/route_api.dart';
@@ -265,7 +265,10 @@ class _PetaRutePageState extends State<PetaRutePage> {
         context,
       ).pushReplacement(MaterialPageRoute(builder: (_) => const LaporPage()));
     } else if (i == 3) {
-      _snack('Halaman Artikel belum tersedia.');
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const ArticlePage()));
+      return;
     }
   }
 

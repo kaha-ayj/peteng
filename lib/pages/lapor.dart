@@ -13,12 +13,10 @@ import 'package:latlong2/latlong.dart';
 import 'home.dart' show AppColors, AppBottomNav;
 import 'laporan_api.dart';
 import 'peta_rute.dart';
-import 'artikel.dart';
+import 'article_page.dart';
 import 'place_search.dart';
 
-/// Panel "Simulasi Respons Verifikasi AI" di bagian bawah halaman hanya
-/// untuk demo/presentasi (tidak terhubung ke sistem AI sungguhan).
-/// Ubah ke false sebelum aplikasi dipakai warga sungguhan.
+
 const bool kTampilkanSimulasiAI = true;
 
 const Color _cRedup = Color(0xFFC27605);
@@ -26,9 +24,7 @@ const Color _cGelap = Color(0xFFBE003D);
 const Color _cGulita = Color(0xFF7A0026);
 const Color _cTerang = Color(0xFF026343);
 
-/// >>> `value` di bawah ini TEBAKAN. Backend menerima `kategori` sebagai
-/// string; samakan dengan nilai yang diizinkan usecase-mu (kalau ada
-/// daftar putih). Teks `label` sudah sesuai desainmu. <<<
+
 const List<({String value, String label})> kKategoriLaporan = [
   (value: 'pju_mati_total', label: 'PJU Mati Total'),
   (value: 'pju_redup_kedip', label: 'PJU Redup / Kedip'),
@@ -143,12 +139,12 @@ class _LaporPageState extends State<LaporPage> {
   // ------------------------------------------------------------------
 
   void _onNavTap(int i) {
-    if (_sending) return; // jangan pindah halaman saat laporan sedang dikirim
+    if (_sending) return; 
     switch (i) {
-      case 0: // Home: kembali ke halaman paling awal
+      case 0: 
         Navigator.of(context).popUntil((r) => r.isFirst);
         break;
-      case 1: // Peta & Rute: ganti halaman supaya stack tidak menumpuk
+      case 1: 
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const PetaRutePage()),
         );
@@ -156,7 +152,9 @@ class _LaporPageState extends State<LaporPage> {
       case 2: // Lapor: sudah di halaman ini
         break;
       case 3: // Artikel
-        // TODO: sama seperti di Home, tab ini belum punya tujuan.
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const ArticlePage()),
+        );
         break;
     }
   }

@@ -7,6 +7,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:peteng/services/route_api.dart';
 import 'place_search.dart';
 import 'peta_rute.dart';
+import 'article_page.dart';
 import 'lapor.dart';
 
 class AppColors {
@@ -40,6 +41,12 @@ class _HomeState extends State<Home> {
       Navigator.of(
         context,
       ).push(MaterialPageRoute(builder: (_) => const LaporPage()));
+      return;
+    }
+    if (i == 3) {
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const ArticlePage()));
       return;
     }
     setState(() => _navIndex = i);
