@@ -5,6 +5,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/foundation.dart';
 import 'article_page.dart';
 import 'home.dart' show AppColors;
 import 'place_search.dart';
@@ -13,8 +14,10 @@ import 'lapor.dart';
 
 const String kSosNumber = '112';
 
-const Color _cTerang = Color(0xFF026343);
-const Color _cGelap = Color(0xFFBE003D);
+const Color _cTerang = Color(0xFF16834A);
+const Color _cRedup = Color(0xFFF2C230);
+const Color _cGelap = Color(0xFFD92745);
+const Color _cTidakDiketahui = Color(0xFF9299A5);
 const Color _cSimulasi = Color(0xFF8A5A00);
 
 class PetaRutePage extends StatefulWidget {
@@ -25,8 +28,49 @@ class PetaRutePage extends StatefulWidget {
 }
 
 class _PetaRutePageState extends State<PetaRutePage> {
-  final MapController _map = MapController();
+  
+static final LatLngBounds _batasIndramayu = LatLngBounds(
+  const LatLng(-6.66395863, 107.850749454),
+  const LatLng(-5.806538058, 108.542602915),
+);
 
+  Widget _legendPenerangan() {
+    Widget item(Color color, String label) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: GoogleFonts.poppins(fontSize: 10, color: AppColors.muted),
+          ),
+        ],
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: _cardDeco(radius: 14),
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 8,
+        children: [
+          item(_cTerang, 'Terang'),
+          item(_cRedup, 'Redup'),
+          item(_cGelap, 'Gelap'),
+          item(_cTidakDiketahui, 'Belum diketahui'),
+        ],
+      ),
+    );
+  }
+
+  final MapController _map = MapController();
   LatLng? _origin;
   String? _originLabel;
   LatLng? _dest;
@@ -61,10 +105,22 @@ class _PetaRutePageState extends State<PetaRutePage> {
       ..showSnackBar(SnackBar(content: Text(msg)));
   }
 
-  // ------------------------------------------------------------------
-  // Memilih titik
-  // ------------------------------------------------------------------
+  // Koordinat khusus untuk pengujian integrasi backend.
+  void _useTestCoordinates() {
+    setState(() {
+      _origin = const LatLng(-6.3264, 108.3256);
+      _originLabel = 'Titik Uji Awal';
 
+      _dest = const LatLng(-6.3150, 108.3200);
+      _destLabel = 'Titik Uji Tujuan';
+    });
+
+    _onPointsChanged();
+
+    _map.move(const LatLng(-6.3207, 108.3228), 15);
+  }
+
+  // Memilih titik awal atau tujuan dari lokasi saat ini.
   Future<void> _useMyLocation() async {
     if (_locating) return;
     setState(() => _locating = true);
@@ -191,6 +247,101 @@ class _PetaRutePageState extends State<PetaRutePage> {
     }
   }
 
+  Color _warnaPenerangan(String status) {
+    switch (status.toLowerCase()) {
+      case 'terang':
+        return _cTerang;
+      case 'redup':
+        return _cRedup;
+      case 'gelap':
+        return _cGelap;
+      case 'tidak_diketahui':
+      default:
+        return _cTidakDiketahui;
+    }
+  }
+
+  /// Menggabungkan segmen berurutan dengan status sama,
+  /// supaya jumlah Polyline yang digambar tidak berlebihan.
+  
+List<Polyline> _buatGarisPenerangan(RouteOption route) {
+  final segmen = route.segmenPenerangan;
+
+  // Jika backend tidak mengirim segmen penerangan,
+  // tampilkan jalur dengan warna netral.
+  if (segmen.isEmpty) {
+    if (route.titik.length < 2) return [];
+
+    return [
+      Polyline(
+        points: route.titik,
+        strokeWidth: 5,
+        color: _cTidakDiketahui,
+      ),
+    ];
+  }
+
+  final hasil = <Polyline>[];
+
+  String? statusAktif;
+  List<LatLng> titikAktif = [];
+
+  const toleransiSambunganMeter = 3.0;
+  const pengukurJarak = Distance();
+
+  void simpanGaris() {
+    if (statusAktif != null && titikAktif.length >= 2) {
+      hasil.add(
+        Polyline(
+          points: List<LatLng>.from(titikAktif),
+          strokeWidth: 6,
+          color: _warnaPenerangan(statusAktif!),
+        ),
+      );
+    }
+
+    titikAktif = [];
+  }
+
+  for (final s in segmen) {
+    final status = s.status.toLowerCase().trim();
+
+    final tersambung = titikAktif.isNotEmpty &&
+        pengukurJarak.as(
+              LengthUnit.Meter,
+              titikAktif.last,
+              s.awal,
+            ) <=
+            toleransiSambunganMeter;
+
+    final statusSama = statusAktif == status;
+
+    if (!statusSama || !tersambung) {
+      simpanGaris();
+
+      statusAktif = status;
+      titikAktif = [s.awal, s.akhir];
+    } else {
+      // Tambahkan titik awal jika belum tersambung tepat.
+      if (pengukurJarak.as(
+            LengthUnit.Meter,
+            titikAktif.last,
+            s.awal,
+          ) >
+          0.5) {
+        titikAktif.add(s.awal);
+      }
+
+      titikAktif.add(s.akhir);
+    }
+  }
+
+  simpanGaris();
+
+  return hasil;
+}
+
+
   void _fitPoints() {
     final pts = <LatLng>[
       if (_origin != null) _origin!,
@@ -298,6 +449,8 @@ class _PetaRutePageState extends State<PetaRutePage> {
                 _modeRow(),
                 const SizedBox(height: 14),
                 _mapCard(),
+                const SizedBox(height: 8),
+                _legendPenerangan(),
                 const SizedBox(height: 18),
                 _optionsSection(),
               ],
@@ -342,6 +495,14 @@ class _PetaRutePageState extends State<PetaRutePage> {
             ),
           ),
         ),
+
+        // Tombol pengujian hanya tampil saat mode debug.
+        if (kDebugMode)
+          IconButton(
+            tooltip: 'Uji koordinat backend',
+            icon: const Icon(Icons.science_outlined, color: AppColors.brand),
+            onPressed: _useTestCoordinates,
+          ),
       ],
     );
   }
@@ -449,10 +610,15 @@ class _PetaRutePageState extends State<PetaRutePage> {
           child: Stack(
             children: [
               FlutterMap(
-                mapController: _map,
-                options: const MapOptions(
+                mapController: _map,            
+                options: MapOptions(
                   initialCenter: _indramayu,
-                  initialZoom: 13,
+                  initialZoom: 10,
+                  minZoom: 9,
+                  maxZoom: 18,
+                  cameraConstraint: CameraConstraint.contain(
+                    bounds: _batasIndramayu,
+                  ),
                 ),
                 children: [
                   TileLayer(
@@ -463,6 +629,7 @@ class _PetaRutePageState extends State<PetaRutePage> {
                   if (hasRoute)
                     PolylineLayer(
                       polylines: [
+                        // Rute alternatif tetap abu-abu.
                         for (var i = 0; i < _routes.length; i++)
                           if (i != _selected)
                             Polyline(
@@ -470,11 +637,9 @@ class _PetaRutePageState extends State<PetaRutePage> {
                               strokeWidth: 4,
                               color: const Color(0xFF9AA0B5),
                             ),
-                        Polyline(
-                          points: _routes[_selected].titik,
-                          strokeWidth: 6,
-                          color: AppColors.brand,
-                        ),
+
+                        // Rute yang dipilih memakai warna sesuai penerangan.
+                        ..._buatGarisPenerangan(_routes[_selected]),
                       ],
                     ),
                   MarkerLayer(
@@ -568,11 +733,7 @@ class _PetaRutePageState extends State<PetaRutePage> {
           if (!_routes.any((r) => r.direkomendasikan))
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: _hint(
-                Icons.info_outline,
-                'Belum ada rute yang direkomendasikan karena data penerangan '
-                'belum cukup.',
-              ),
+              child: _hint(Icons.info_outline, _pesanCakupanRendah()),
             ),
           for (var i = 0; i < _routes.length; i++)
             _OptionCard(
@@ -603,6 +764,36 @@ class _PetaRutePageState extends State<PetaRutePage> {
         body,
       ],
     );
+  }
+
+  String _pesanCakupanRendah() {
+    final route = _routes[_selected];
+    final diketahui = route.persentaseDiketahui;
+    final belumDiketahui = route.persentaseTidakDiketahui;
+
+    if (route.statusPenilaian == 'belum_ada_data_penerangan') {
+      return 'Belum ada data penerangan yang dapat digunakan untuk menilai '
+          'rute ini. Rute ditampilkan untuk informasi jalur, bukan sebagai '
+          'jaminan keamanan.';
+    }
+
+    if (diketahui != null) {
+      final diketahuiLabel = diketahui.toStringAsFixed(1);
+      final belumLabel = belumDiketahui?.toStringAsFixed(1);
+
+      final nomorRute = route.nomorRute == 0
+          ? _selected + 1
+          : route.nomorRute;
+
+      return 'Belum ada rute yang direkomendasikan. Pada Rute $nomorRute, '
+          'cakupan data penerangan yang diketahui adalah $diketahuiLabel%'
+          '${belumLabel == null ? '' : ', sedangkan $belumLabel% belum diketahui'}. '
+          'Rute ini belum dapat dipastikan aman berdasarkan data yang tersedia.';
+    }
+
+    return 'Belum ada rute yang direkomendasikan karena cakupan data '
+        'penerangan belum cukup. Rute yang ditampilkan belum dapat '
+        'dipastikan aman.';
   }
 
   Widget _hint(IconData icon, String text, {Color color = AppColors.muted}) {
@@ -972,8 +1163,13 @@ class _OptionCard extends StatelessWidget {
                 Row(
                   children: [
                     _Tag(
-                      text: rec ? 'REKOMENDASI TERBAIK' : 'ALTERNATIF',
-                      color: rec ? _cTerang : AppColors.muted,
+                      text: rec
+                          ? 'REKOMENDASI TERBAIK'
+                          : route.statusPenilaian == 'cakupan_data_rendah' ||
+                                  route.statusPenilaian == 'belum_ada_data_penerangan'
+                              ? 'DATA BELUM CUKUP'
+                              : 'BELUM DIREKOMENDASIKAN',
+                      color: rec ? _cTerang : _cTidakDiketahui,
                     ),
                     if (route.dataSimulasi) ...[
                       const SizedBox(width: 6),
@@ -1006,6 +1202,17 @@ class _OptionCard extends StatelessWidget {
                     color: AppColors.muted,
                   ),
                 ),
+                if (route.persentaseDiketahui != null) ...[
+                  const SizedBox(height: 5),
+                  Text(
+                    'Cakupan data diketahui: ${route.persentaseDiketahui!.toStringAsFixed(1)}%'
+                    '${route.persentaseTidakDiketahui == null ? '' : ' • Belum diketahui: ${route.persentaseTidakDiketahui!.toStringAsFixed(1)}%'}',
+                    style: GoogleFonts.poppins(
+                      fontSize: 10.5,
+                      color: AppColors.muted,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 14,
