@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthApi {
-  static const String baseUrl = 'http://192.168.1.2:8080/api/warga';
+  static const String baseUrl = 'http://192.168.0.110:8080/api/warga';
 
   static Future<void> register({
     required String nama,

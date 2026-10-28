@@ -172,7 +172,7 @@ class RouteOption {
 class RouteApi {
   // Ganti jika IP laptop berubah.
   // Emulator Android biasanya menggunakan 10.0.2.2.
-  static const String baseUrl = 'http://192.168.1.2:8080/api/navigasi';
+  static const String baseUrl = 'http://192.168.0.110:8080/api/navigasi';
 
   static Future<List<RouteOption>> cari({
     required LatLng asal,
@@ -241,10 +241,6 @@ class RouteApi {
     return hasil;
   }
 }
-
-// ----------------------------------------------------------------------
-// Helper parsing
-// ----------------------------------------------------------------------
 
 dynamic _pick(Map<String, dynamic> m, List<String> keys) {
   for (final k in keys) {
