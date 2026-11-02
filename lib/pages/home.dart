@@ -5,6 +5,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:peteng/services/route_api.dart';
+import 'profile_page.dart';
 import 'place_search.dart';
 import 'peta_rute.dart';
 import 'article_page.dart';
@@ -223,7 +224,14 @@ class _ActionPill extends StatelessWidget {
           const SizedBox(width: 2),
           _PillIcon(icon: Icons.notifications_none_outlined, onTap: () {}),
           const SizedBox(width: 2),
-          _PillIcon(icon: Icons.person_outline, onTap: () {}),
+          _PillIcon(
+            icon: Icons.person_outline,
+            onTap: () {
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const ProfilePage()));
+            },
+          ),
         ],
       ),
     );
