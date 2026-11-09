@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'home.dart';
 import 'peta_rute.dart';
 import 'lapor.dart';
+import '../widgets/profile_button.dart';
+
 // import '../widgets/app_bottom_nav.dart'; // Asumsi lokasi file AppBottomNav
 // import '../utils/app_colors.dart'; // Asumsi lokasi warna AppColors
 
@@ -140,6 +142,12 @@ class _ArticlePageState extends State<ArticlePage> {
               ),
             ],
           ),
+          actions: const [
+            Padding(
+              padding: EdgeInsets.only(right: 16),
+              child: ProfileButton(),
+            ),
+          ],
         ),
 
         body: SafeArea(

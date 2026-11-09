@@ -50,6 +50,13 @@ class AuthApi {
     if (token != null) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('jwt_token', token);
+
+      // Simpan data warga supaya halaman profil bisa menampilkan nama,
+      // email, dan nomor telepon dari akun yang sedang login.
+      final user = data['user'];
+      if (user is Map) {
+        await prefs.setString('app_user', jsonEncode(user));
+      }
     }
 
     return data;
@@ -60,8 +67,26 @@ class AuthApi {
     return prefs.getString('jwt_token') != null;
   }
 
+  /// Data warga yang tersimpan setelah login.
+  static Future<Map<String, dynamic>?> getCurrentUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('app_user');
+
+    if (raw == null || raw.isEmpty) return null;
+
+    try {
+      final data = jsonDecode(raw);
+      if (data is Map) return Map<String, dynamic>.from(data);
+    } catch (_) {
+      // Data lama/rusak: anggap belum ada sesi pengguna.
+    }
+
+    return null;
+  }
+
   static Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('jwt_token');
+    await prefs.remove('app_user');
   }
 }

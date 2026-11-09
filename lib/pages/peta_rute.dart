@@ -10,6 +10,7 @@ import 'article_page.dart';
 import 'home.dart' show AppColors;
 import 'place_search.dart';
 import '../services/route_api.dart';
+import '../widgets/profile_button.dart';
 import 'lapor.dart';
 
 const String kSosNumber = '112';
@@ -28,11 +29,10 @@ class PetaRutePage extends StatefulWidget {
 }
 
 class _PetaRutePageState extends State<PetaRutePage> {
-  
-static final LatLngBounds _batasIndramayu = LatLngBounds(
-  const LatLng(-6.66395863, 107.850749454),
-  const LatLng(-5.806538058, 108.542602915),
-);
+  static final LatLngBounds _batasIndramayu = LatLngBounds(
+    const LatLng(-6.66395863, 107.850749454),
+    const LatLng(-5.806538058, 108.542602915),
+  );
 
   Widget _legendPenerangan() {
     Widget item(Color color, String label) {
@@ -263,84 +263,71 @@ static final LatLngBounds _batasIndramayu = LatLngBounds(
 
   /// Menggabungkan segmen berurutan dengan status sama,
   /// supaya jumlah Polyline yang digambar tidak berlebihan.
-  
-List<Polyline> _buatGarisPenerangan(RouteOption route) {
-  final segmen = route.segmenPenerangan;
 
-  // Jika backend tidak mengirim segmen penerangan,
-  // tampilkan jalur dengan warna netral.
-  if (segmen.isEmpty) {
-    if (route.titik.length < 2) return [];
+  List<Polyline> _buatGarisPenerangan(RouteOption route) {
+    final segmen = route.segmenPenerangan;
 
-    return [
-      Polyline(
-        points: route.titik,
-        strokeWidth: 5,
-        color: _cTidakDiketahui,
-      ),
-    ];
-  }
+    // Jika backend tidak mengirim segmen penerangan,
+    // tampilkan jalur dengan warna netral.
+    if (segmen.isEmpty) {
+      if (route.titik.length < 2) return [];
 
-  final hasil = <Polyline>[];
-
-  String? statusAktif;
-  List<LatLng> titikAktif = [];
-
-  const toleransiSambunganMeter = 3.0;
-  const pengukurJarak = Distance();
-
-  void simpanGaris() {
-    if (statusAktif != null && titikAktif.length >= 2) {
-      hasil.add(
-        Polyline(
-          points: List<LatLng>.from(titikAktif),
-          strokeWidth: 6,
-          color: _warnaPenerangan(statusAktif!),
-        ),
-      );
+      return [
+        Polyline(points: route.titik, strokeWidth: 5, color: _cTidakDiketahui),
+      ];
     }
 
-    titikAktif = [];
-  }
+    final hasil = <Polyline>[];
 
-  for (final s in segmen) {
-    final status = s.status.toLowerCase().trim();
+    String? statusAktif;
+    List<LatLng> titikAktif = [];
 
-    final tersambung = titikAktif.isNotEmpty &&
-        pengukurJarak.as(
-              LengthUnit.Meter,
-              titikAktif.last,
-              s.awal,
-            ) <=
-            toleransiSambunganMeter;
+    const toleransiSambunganMeter = 3.0;
+    const pengukurJarak = Distance();
 
-    final statusSama = statusAktif == status;
-
-    if (!statusSama || !tersambung) {
-      simpanGaris();
-
-      statusAktif = status;
-      titikAktif = [s.awal, s.akhir];
-    } else {
-      // Tambahkan titik awal jika belum tersambung tepat.
-      if (pengukurJarak.as(
-            LengthUnit.Meter,
-            titikAktif.last,
-            s.awal,
-          ) >
-          0.5) {
-        titikAktif.add(s.awal);
+    void simpanGaris() {
+      if (statusAktif != null && titikAktif.length >= 2) {
+        hasil.add(
+          Polyline(
+            points: List<LatLng>.from(titikAktif),
+            strokeWidth: 6,
+            color: _warnaPenerangan(statusAktif!),
+          ),
+        );
       }
 
-      titikAktif.add(s.akhir);
+      titikAktif = [];
     }
+
+    for (final s in segmen) {
+      final status = s.status.toLowerCase().trim();
+
+      final tersambung =
+          titikAktif.isNotEmpty &&
+          pengukurJarak.as(LengthUnit.Meter, titikAktif.last, s.awal) <=
+              toleransiSambunganMeter;
+
+      final statusSama = statusAktif == status;
+
+      if (!statusSama || !tersambung) {
+        simpanGaris();
+
+        statusAktif = status;
+        titikAktif = [s.awal, s.akhir];
+      } else {
+        // Tambahkan titik awal jika belum tersambung tepat.
+        if (pengukurJarak.as(LengthUnit.Meter, titikAktif.last, s.awal) > 0.5) {
+          titikAktif.add(s.awal);
+        }
+
+        titikAktif.add(s.akhir);
+      }
+    }
+
+    simpanGaris();
+
+    return hasil;
   }
-
-  simpanGaris();
-
-  return hasil;
-}
-
 
   void _fitPoints() {
     final pts = <LatLng>[
@@ -503,6 +490,9 @@ List<Polyline> _buatGarisPenerangan(RouteOption route) {
             icon: const Icon(Icons.science_outlined, color: AppColors.brand),
             onPressed: _useTestCoordinates,
           ),
+
+        const SizedBox(width: 4),
+        const ProfileButton(),
       ],
     );
   }
@@ -610,7 +600,7 @@ List<Polyline> _buatGarisPenerangan(RouteOption route) {
           child: Stack(
             children: [
               FlutterMap(
-                mapController: _map,            
+                mapController: _map,
                 options: MapOptions(
                   initialCenter: _indramayu,
                   initialZoom: 10,
@@ -781,9 +771,7 @@ List<Polyline> _buatGarisPenerangan(RouteOption route) {
       final diketahuiLabel = diketahui.toStringAsFixed(1);
       final belumLabel = belumDiketahui?.toStringAsFixed(1);
 
-      final nomorRute = route.nomorRute == 0
-          ? _selected + 1
-          : route.nomorRute;
+      final nomorRute = route.nomorRute == 0 ? _selected + 1 : route.nomorRute;
 
       return 'Belum ada rute yang direkomendasikan. Pada Rute $nomorRute, '
           'cakupan data penerangan yang diketahui adalah $diketahuiLabel%'
@@ -1166,9 +1154,10 @@ class _OptionCard extends StatelessWidget {
                       text: rec
                           ? 'REKOMENDASI TERBAIK'
                           : route.statusPenilaian == 'cakupan_data_rendah' ||
-                                  route.statusPenilaian == 'belum_ada_data_penerangan'
-                              ? 'DATA BELUM CUKUP'
-                              : 'BELUM DIREKOMENDASIKAN',
+                                route.statusPenilaian ==
+                                    'belum_ada_data_penerangan'
+                          ? 'DATA BELUM CUKUP'
+                          : 'BELUM DIREKOMENDASIKAN',
                       color: rec ? _cTerang : _cTidakDiketahui,
                     ),
                     if (route.dataSimulasi) ...[

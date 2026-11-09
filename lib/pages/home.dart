@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:peteng/services/auth_api.dart';
 import 'package:peteng/services/route_api.dart';
 import 'profile_page.dart';
 import 'place_search.dart';
@@ -30,6 +31,22 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   int _navIndex = 0;
+  String _firstName = 'Rei';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserName();
+  }
+
+  Future<void> _loadUserName() async {
+    final user = await AuthApi.getCurrentUser();
+    final nama = (user?['nama'] ?? '').toString().trim();
+
+    if (!mounted || nama.isEmpty) return;
+
+    setState(() => _firstName = nama.split(RegExp(r'\s+')).first);
+  }
 
   void _onNavTap(int i) {
     if (i == 1) {
@@ -77,9 +94,9 @@ class _HomeState extends State<Home> {
                   child: _TopBar(),
                 ),
                 const SizedBox(height: 18),
-                const Padding(
-                  padding: EdgeInsets.only(left: 20),
-                  child: _GreetingRow(),
+                Padding(
+                  padding: const EdgeInsets.only(left: 20),
+                  child: _GreetingRow(firstName: _firstName),
                 ),
                 const SizedBox(height: 18),
                 Padding(
@@ -150,7 +167,9 @@ class _TopBar extends StatelessWidget {
 }
 
 class _GreetingRow extends StatelessWidget {
-  const _GreetingRow();
+  const _GreetingRow({required this.firstName});
+
+  final String firstName;
 
   @override
   Widget build(BuildContext context) {
@@ -162,7 +181,9 @@ class _GreetingRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Halo, Rei !',
+                'Halo, $firstName !',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.poppins(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,

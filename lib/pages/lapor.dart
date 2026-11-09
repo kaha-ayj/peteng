@@ -15,7 +15,7 @@ import 'laporan_api.dart';
 import 'peta_rute.dart';
 import 'article_page.dart';
 import 'place_search.dart';
-
+import '../widgets/profile_button.dart';
 
 const bool kTampilkanSimulasiAI = true;
 
@@ -23,7 +23,6 @@ const Color _cRedup = Color(0xFFC27605);
 const Color _cGelap = Color(0xFFBE003D);
 const Color _cGulita = Color(0xFF7A0026);
 const Color _cTerang = Color(0xFF026343);
-
 
 const List<({String value, String label})> kKategoriLaporan = [
   (value: 'pju_mati_total', label: 'PJU Mati Total'),
@@ -139,12 +138,12 @@ class _LaporPageState extends State<LaporPage> {
   // ------------------------------------------------------------------
 
   void _onNavTap(int i) {
-    if (_sending) return; 
+    if (_sending) return;
     switch (i) {
-      case 0: 
+      case 0:
         Navigator.of(context).popUntil((r) => r.isFirst);
         break;
-      case 1: 
+      case 1:
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const PetaRutePage()),
         );
@@ -547,14 +546,18 @@ class _LaporPageState extends State<LaporPage> {
           ),
         ),
         const SizedBox(width: 12),
-        Text(
-          'Buat Laporan',
-          style: GoogleFonts.poppins(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color: AppColors.brand,
+        Expanded(
+          child: Text(
+            'Buat Laporan',
+            style: GoogleFonts.poppins(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: AppColors.brand,
+            ),
           ),
         ),
+        const SizedBox(width: 8),
+        const ProfileButton(),
       ],
     );
   }
