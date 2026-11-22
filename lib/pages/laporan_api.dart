@@ -66,12 +66,47 @@ class LaporanDraft {
   }
 }
 
-enum LaporanHasil { diterima, ditolak, gagal }
+enum LaporanHasil { tersimpan, gagal }
 
 class LaporanResult {
-  const LaporanResult(this.hasil, this.pesan);
+  const LaporanResult(this.hasil, this.pesan, {this.idLaporan});
   final LaporanHasil hasil;
   final String pesan;
+  final String? idLaporan;
+}
+
+class StatusLaporan {
+  const StatusLaporan({
+    required this.idLaporan,
+    required this.status,
+    this.hasilValidasi,
+    this.analisisAi,
+    this.progres = const [],
+  });
+
+  final String idLaporan;
+  final String status;
+  final Map<String, dynamic>? hasilValidasi;
+  final Map<String, dynamic>? analisisAi;
+  final List<dynamic> progres;
+
+  factory StatusLaporan.fromJson(Map<String, dynamic> json) {
+    final hasil = json['hasil_validasi_ai'];
+    final analisis = hasil is Map ? hasil['analisis_ai'] : null;
+    return StatusLaporan(
+      idLaporan: (json['laporan'] is Map
+              ? (json['laporan'] as Map)['id_laporan']
+              : json['id_laporan'])
+          ?.toString() ?? '',
+      status: (json['laporan'] is Map
+              ? (json['laporan'] as Map)['status']
+              : json['status'])
+          ?.toString() ?? 'diajukan',
+      hasilValidasi: hasil is Map ? Map<String, dynamic>.from(hasil) : null,
+      analisisAi: analisis is Map ? Map<String, dynamic>.from(analisis) : null,
+      progres: json['progres'] is List ? List<dynamic>.from(json['progres']) : const [],
+    );
+  }
 }
 
 class LaporanApi {
@@ -83,6 +118,24 @@ class LaporanApi {
   static String _fotoJson(Uint8List bytes) {
     final b64 = base64Encode(bytes);
     return kFotoPakaiPrefixDataUri ? 'data:image/jpeg;base64,$b64' : b64;
+  }
+
+  static Future<StatusLaporan?> ambilStatus(String idLaporan) async {
+    final token = await bacaToken();
+    if (token == null || token.isEmpty) return null;
+    try {
+      final res = await http.get(
+        Uri.parse('$kApiBaseUrl$kLaporanPath/$idLaporan'),
+        headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 20));
+      if (res.statusCode < 200 || res.statusCode >= 300) return null;
+      final decoded = jsonDecode(res.body);
+      final data = decoded is Map ? decoded['data'] : null;
+      if (data is! Map) return null;
+      return StatusLaporan.fromJson(Map<String, dynamic>.from(data));
+    } on Exception {
+      return null;
+    }
   }
 
   static Future<LaporanResult> kirim(LaporanDraft d) async {
@@ -113,9 +166,20 @@ class LaporanApi {
 
       // Sukses: handler membalas 201 + {"status","message","data"}.
       if (res.statusCode >= 200 && res.statusCode < 300) {
+        String? idLaporan;
+        try {
+          final decoded = jsonDecode(res.body);
+          final data = decoded is Map ? decoded['data'] : null;
+          if (data is Map && data['id_laporan'] != null) {
+            idLaporan = data['id_laporan'].toString();
+          }
+        } on FormatException {
+          // Backend sukses semestinya mengembalikan JSON; status submit tetap tersimpan.
+        }
         return LaporanResult(
-          LaporanHasil.diterima,
-          pesan ?? 'Laporan terkirim.',
+          LaporanHasil.tersimpan,
+          pesan ?? 'Laporan tersimpan. Validasi AI berjalan di latar belakang.',
+          idLaporan: idLaporan,
         );
       }
 
@@ -145,8 +209,8 @@ class LaporanApi {
           // Handler `Create` membalas 400 untuk error dari usecase
           // (validasi, penolakan foto, dst.), pesannya dari backend.
           return LaporanResult(
-            LaporanHasil.ditolak,
-            pesan ?? 'Laporan ditolak. Periksa foto dan data yang diisi.',
+            LaporanHasil.gagal,
+            pesan ?? 'Data laporan tidak dapat diproses. Periksa kembali isian.',
           );
         default:
           if (res.statusCode >= 500) {
