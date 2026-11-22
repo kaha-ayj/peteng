@@ -2,17 +2,13 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 import 'auth_api.dart';
 
-/// Login Google memakai google_sign_in 7.x.
-///
-/// ID token dikirim ke backend untuk diverifikasi. Client ID tidak
-/// di-hardcode; isi lewat:
-/// flutter run --dart-define=GOOGLE_SERVER_CLIENT_ID=xxxx.apps.googleusercontent.com
 class GoogleAuth {
   GoogleAuth._();
 
   static const String _serverClientId = String.fromEnvironment(
     'GOOGLE_SERVER_CLIENT_ID',
-    defaultValue: '',
+    defaultValue:
+        '693709928153-dbk9il0pb2avmn2lugte0kl49mcjhni8.apps.googleusercontent.com',
   );
 
   static bool _initialized = false;
@@ -22,8 +18,7 @@ class GoogleAuth {
   static Future<String> signInAndGetIdToken() async {
     if (_serverClientId.isEmpty) {
       throw const AuthException(
-        'GOOGLE_SERVER_CLIENT_ID belum diisi. Jalankan aplikasi dengan '
-        '--dart-define=GOOGLE_SERVER_CLIENT_ID=...',
+        'GOOGLE_SERVER_CLIENT_ID belum diisi.',
         code: 'google_belum_dikonfigurasi',
       );
     }
