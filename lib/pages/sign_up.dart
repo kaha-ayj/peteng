@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:peteng/services/auth_api.dart';
+import 'package:peteng/services/google_auth.dart';
+import 'verify_email_page.dart';
 import 'package:peteng/theme/app_theme.dart';
 
 const String kLogoAsset = 'lib/assets/images/logo_bulet.png';
@@ -25,6 +27,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
   bool _obscure = true;
   bool _isLoading = false;
+  bool _isGoogleLoading = false;
 
   @override
   void dispose() {
@@ -33,6 +36,14 @@ class _SignUpPageState extends State<SignUpPage> {
     _emailC.dispose();
     _passC.dispose();
     super.dispose();
+  }
+
+  void _info(String message) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _submit() async {
@@ -48,45 +59,96 @@ class _SignUpPageState extends State<SignUpPage> {
       _isLoading = true;
     });
 
+    final email = _emailC.text.trim().toLowerCase();
+
     try {
-      await AuthApi.register(
+      final result = await AuthApi.register(
         nama: _namaC.text.trim(),
         nomorTelepon: _teleponC.text.trim(),
-        email: _emailC.text.trim().toLowerCase(),
+        email: email,
         password: _passC.text,
       );
 
       if (!mounted) return;
 
-      setState(() {
-        _isLoading = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sign up berhasil. Silakan Login.')),
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) =>
+              VerifyEmailPage(email: email, debugCode: result.debugCode),
+        ),
       );
-
-      if (Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
-      }
-    } catch (e) {
+    } on AuthException catch (e) {
       if (!mounted) return;
+      _info(e.message);
+    } catch (_) {
+      if (!mounted) return;
+      _info('Sign up gagal. Coba lagi.');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
-      setState(() {
-        _isLoading = false;
-      });
+  Future<void> _signInWithGoogle() async {
+    if (_isGoogleLoading) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-      );
+    FocusScope.of(context).unfocus();
+
+    // Password diambil dari kolom Sign Up yang sudah tersedia.
+    final password = _passC.text;
+
+    if (password.length < 8) {
+      _info('Isi password minimal 8 karakter terlebih dahulu.');
+      return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Sign up berhasil. Silakan Login.')),
-    );
+    setState(() {
+      _isGoogleLoading = true;
+    });
 
-    if (Navigator.of(context).canPop()) {
-      Navigator.of(context).pop();
+    try {
+      // Pilih akun Google asli.
+      final idToken = await GoogleAuth.signInAndGetIdToken();
+
+      if (!mounted) return;
+
+      // Daftarkan akun dan kirim OTP ke email Google.
+      final result = await AuthApi.registerWithGoogle(
+        idToken: idToken,
+        password: password,
+      );
+
+      if (!mounted) return;
+
+      final email = result.email;
+
+      if (email == null || email.isEmpty) {
+        _info('Email Google tidak ditemukan.');
+        return;
+      }
+
+      // Masuk ke halaman verifikasi OTP.
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) =>
+              VerifyEmailPage(email: email, debugCode: result.debugCode),
+        ),
+      );
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      _info(e.message);
+    } catch (_) {
+      if (!mounted) return;
+      _info('Daftar dengan Google gagal. Coba lagi.');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGoogleLoading = false;
+        });
+      }
     }
   }
 
@@ -340,22 +402,31 @@ class _SignUpPageState extends State<SignUpPage> {
               children: [
                 _SocialButton(
                   semanticLabel: 'Daftar dengan Google',
-                  onTap: () {},
-                  child: Text(
-                    'G',
-                    style: GoogleFonts.poppins(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF4285F4),
-                    ),
-                  ),
+                  onTap: _isGoogleLoading ? () {} : _signInWithGoogle,
+                  child: _isGoogleLoading
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Color(0xFF4285F4),
+                          ),
+                        )
+                      : Text(
+                          'G',
+                          style: GoogleFonts.poppins(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF4285F4),
+                          ),
+                        ),
                 ),
 
                 const SizedBox(width: 24),
 
                 _SocialButton(
                   semanticLabel: 'Daftar dengan Facebook',
-                  onTap: () {},
+                  onTap: () => _info('Daftar dengan Facebook belum tersedia.'),
                   child: const Icon(
                     Icons.facebook,
                     size: 20,

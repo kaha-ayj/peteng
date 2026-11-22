@@ -4,8 +4,11 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'package:peteng/services/auth_api.dart';
 import 'package:peteng/theme/app_theme.dart';
-import 'sign_up.dart';
+import 'package:peteng/services/google_auth.dart';
+
 import 'home.dart';
+import 'sign_up.dart';
+import 'verify_email_page.dart';
 
 const String kLogoAsset = 'lib/assets/images/logo_bulet.png';
 
@@ -27,12 +30,21 @@ class _LoginPageState extends State<LoginPage> {
   bool _obscure = true;
   bool _rememberMe = false;
   bool _isLoading = false;
+  bool _isGoogleLoading = false;
 
   @override
   void dispose() {
     _emailC.dispose();
     _passC.dispose();
     super.dispose();
+  }
+
+  void _info(String message) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _submit() async {
@@ -48,32 +60,71 @@ class _LoginPageState extends State<LoginPage> {
       _isLoading = true;
     });
 
+    final email = _emailC.text.trim().toLowerCase();
+
     try {
-      await AuthApi.login(
-        email: _emailC.text.trim().toLowerCase(),
-        password: _passC.text,
-      );
+      await AuthApi.login(email: email, password: _passC.text);
 
       if (!mounted) return;
-
-      setState(() {
-        _isLoading = false;
-      });
 
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const Home()),
         (route) => false,
       );
-    } catch (e) {
+    } on AuthException catch (e) {
       if (!mounted) return;
 
-      setState(() {
-        _isLoading = false;
-      });
+      if (e.code == 'email_belum_diverifikasi') {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => VerifyEmailPage(email: email)),
+        );
+        return;
+      }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      _info(e.message);
+    } catch (_) {
+      if (!mounted) return;
+      _info('Login gagal. Coba lagi.');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _signInWithGoogle() async {
+    if (_isGoogleLoading) return;
+
+    FocusScope.of(context).unfocus();
+
+    setState(() {
+      _isGoogleLoading = true;
+    });
+
+    try {
+      final idToken = await GoogleAuth.signInAndGetIdToken();
+      await AuthApi.loginWithGoogle(idToken: idToken);
+
+      if (!mounted) return;
+
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const Home()),
+        (route) => false,
       );
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      _info(e.message);
+    } catch (_) {
+      if (!mounted) return;
+      _info('Login Google gagal. Coba lagi.');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGoogleLoading = false;
+        });
+      }
     }
   }
 
@@ -341,22 +392,31 @@ class _LoginPageState extends State<LoginPage> {
               children: [
                 _SocialButton(
                   semanticLabel: 'Login dengan Google',
-                  onTap: () {},
-                  child: Text(
-                    'G',
-                    style: GoogleFonts.poppins(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF4285F4),
-                    ),
-                  ),
+                  onTap: _isGoogleLoading ? () {} : _signInWithGoogle,
+                  child: _isGoogleLoading
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Color(0xFF4285F4),
+                          ),
+                        )
+                      : Text(
+                          'G',
+                          style: GoogleFonts.poppins(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF4285F4),
+                          ),
+                        ),
                 ),
 
                 const SizedBox(width: 24),
 
                 _SocialButton(
                   semanticLabel: 'Login dengan Facebook',
-                  onTap: () {},
+                  onTap: () => _info('Login dengan Facebook belum tersedia.'),
                   child: const Icon(
                     Icons.facebook,
                     size: 20,
