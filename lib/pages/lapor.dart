@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -442,13 +443,12 @@ class _LaporPageState extends State<LaporPage> {
     setState(() => _sending = false);
 
     switch (hasil.hasil) {
-      case LaporanHasil.diterima:
+      case LaporanHasil.tersimpan:
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const LaporanTerkirimPage()),
+          MaterialPageRoute(
+            builder: (_) => LaporanTerkirimPage(idLaporan: hasil.idLaporan),
+          ),
         );
-        break;
-      case LaporanHasil.ditolak:
-        _dialogDitolak(hasil.pesan);
         break;
       case LaporanHasil.gagal:
         _snack(hasil.pesan);
@@ -1911,11 +1911,52 @@ class _AiSimulasiCardState extends State<_AiSimulasiCard> {
 // Halaman setelah laporan berhasil dikirim
 // ----------------------------------------------------------------------
 
-class LaporanTerkirimPage extends StatelessWidget {
-  const LaporanTerkirimPage({super.key});
+class LaporanTerkirimPage extends StatefulWidget {
+  const LaporanTerkirimPage({super.key, this.idLaporan});
+
+  final String? idLaporan;
+
+  @override
+  State<LaporanTerkirimPage> createState() => _LaporanTerkirimPageState();
+}
+
+class _LaporanTerkirimPageState extends State<LaporanTerkirimPage> {
+  StatusLaporan? _status;
+  Timer? _pollTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _refresh();
+    _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) => _refresh());
+  }
+
+  Future<void> _refresh() async {
+    final id = widget.idLaporan;
+    if (id == null || id.isEmpty) return;
+    final status = await LaporanApi.ambilStatus(id);
+    if (mounted && status != null) setState(() => _status = status);
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final current = _status?.status;
+    final statusText = switch (current) {
+      'diajukan' => 'Laporan tersimpan; menunggu validasi AI.',
+      'diproses_ai' => 'Foto sedang divalidasi AI.',
+      'gagal_validasi' => 'Validasi teknis gagal. Silakan coba lagi nanti.',
+      'diterima' => 'Laporan diterima untuk ditindaklanjuti.',
+      'ditolak' => 'Laporan ditolak berdasarkan hasil validasi foto.',
+      'diproses' => 'Laporan sedang ditindaklanjuti Dishub.',
+      'selesai' => 'Tindak lanjut laporan selesai.',
+      _ => 'Laporan tersimpan. Status validasi sedang diperbarui.',
+    };
     return Scaffold(
       backgroundColor: AppColors.card,
       body: SafeArea(
@@ -1925,10 +1966,10 @@ class LaporanTerkirimPage extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.check_circle, size: 84, color: _cTerang),
+                const Icon(Icons.cloud_done_outlined, size: 84, color: _cTerang),
                 const SizedBox(height: 18),
                 Text(
-                  'Laporan Terkirim',
+                  'Laporan Tersimpan',
                   style: GoogleFonts.poppins(
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
@@ -1938,7 +1979,7 @@ class LaporanTerkirimPage extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   'Terima kasih sudah membantu memetakan titik gelap di Indramayu. '
-                  'Laporanmu akan diperiksa sebelum ditindaklanjuti.',
+                  '$statusText',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.poppins(
                     fontSize: 13,
