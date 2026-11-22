@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../pages/profile_page.dart';
+import '../theme/app_theme.dart';
 
 /// Tombol bulat untuk membuka halaman profil.
 ///
@@ -9,19 +10,19 @@ import '../pages/profile_page.dart';
 class ProfileButton extends StatelessWidget {
   const ProfileButton({
     super.key,
-    this.color = const Color(0xFF172554),
-    this.backgroundColor = Colors.white,
+    this.color,
+    this.backgroundColor,
     this.iconSize = 20,
   });
 
-  final Color color;
-  final Color backgroundColor;
+  final Color? color;
+  final Color? backgroundColor;
   final double iconSize;
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: backgroundColor,
+      color: backgroundColor ?? AppColors.surface,
       elevation: 2,
       shadowColor: const Color(0x33000000),
       shape: const CircleBorder(),
@@ -32,7 +33,11 @@ class ProfileButton extends StatelessWidget {
         ).push(MaterialPageRoute(builder: (_) => const ProfilePage())),
         child: Padding(
           padding: const EdgeInsets.all(9),
-          child: Icon(Icons.person_outline, size: iconSize, color: color),
+          child: Icon(
+            Icons.person_outline,
+            size: iconSize,
+            color: color ?? AppColors.brand,
+          ),
         ),
       ),
     );

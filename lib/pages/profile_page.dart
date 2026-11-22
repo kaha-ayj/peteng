@@ -1,19 +1,24 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/auth_api.dart';
+import '../theme/app_theme.dart';
 import 'login.dart';
 
-const Color _brand = Color(0xFF172554);
-const Color _brandSoft = Color(0xFF243B7A);
-const Color _cardBg = Color(0xFFF1F1EF);
-const Color _muted = Color(0xFF5B6070);
+Color get _brand => AppColors.brand;
+Color get _brandFill => AppColors.brandFill;
+Color get _brandSoft => AppColors.brandSoft;
+Color get _cardBg => AppColors.card;
+Color get _muted => AppColors.muted;
 const Color _accent = Color(0xFF00C4FF);
 
 const String _prefNotif = 'pref_notifikasi_laporan';
-const String _prefDark = 'pref_tema_gelap';
+const String _prefAvatar = 'foto_profil';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -26,9 +31,10 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _loading = true;
   Map<String, dynamic>? _user;
 
-  // Toggle untuk pengaturan preferensi.
   bool _pushNotification = true;
   bool _darkTheme = false;
+
+  Uint8List? _avatarBytes;
 
   @override
   void initState() {
@@ -39,13 +45,24 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _loadProfile() async {
     final user = await AuthApi.getCurrentUser();
     final prefs = await SharedPreferences.getInstance();
+    final avatarRaw = prefs.getString(_prefAvatar);
+
+    Uint8List? avatar;
+    if (avatarRaw != null && avatarRaw.isNotEmpty) {
+      try {
+        avatar = base64Decode(avatarRaw);
+      } catch (_) {
+        // Data foto lama/rusak: tampilkan inisial saja.
+      }
+    }
 
     if (!mounted) return;
 
     setState(() {
       _user = user;
       _pushNotification = prefs.getBool(_prefNotif) ?? true;
-      _darkTheme = prefs.getBool(_prefDark) ?? false;
+      _darkTheme = AppThemeController.instance.isDark;
+      _avatarBytes = avatar;
       _loading = false;
     });
   }
@@ -58,8 +75,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _setDarkTheme(bool value) async {
     setState(() => _darkTheme = value);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_prefDark, value);
+    await AppThemeController.instance.setDark(value);
   }
 
   String get _nama {
@@ -96,6 +112,132 @@ class _ProfilePageState extends State<ProfilePage> {
 
   void _comingSoon(String fitur) {
     _info('Fitur $fitur belum tersedia. Nantikan pembaruan berikutnya ya.');
+  }
+
+  Future<void> _pickAvatar() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(
+                child: Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                'Ubah Foto Profil',
+                style: GoogleFonts.poppins(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: _brand,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: Container(
+                  width: 42,
+                  height: 42,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: _brand.withValues(alpha: .08),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.camera_alt_outlined,
+                    color: _brand,
+                    size: 22,
+                  ),
+                ),
+                title: Text(
+                  'Ambil dari Kamera',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                subtitle: Text(
+                  'Foto langsung menggunakan kamera',
+                  style: GoogleFonts.poppins(fontSize: 11, color: _muted),
+                ),
+                onTap: () => Navigator.of(ctx).pop(ImageSource.camera),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              const SizedBox(height: 4),
+              ListTile(
+                leading: Container(
+                  width: 42,
+                  height: 42,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: _brand.withValues(alpha: .08),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.photo_library_outlined,
+                    color: _brand,
+                    size: 22,
+                  ),
+                ),
+                title: Text(
+                  'Pilih dari Galeri',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                subtitle: Text(
+                  'Ambil foto dari galeri perangkat',
+                  style: GoogleFonts.poppins(fontSize: 11, color: _muted),
+                ),
+                onTap: () => Navigator.of(ctx).pop(ImageSource.gallery),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (source == null) return;
+
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: source,
+        imageQuality: 80,
+        maxWidth: 512,
+        maxHeight: 512,
+      );
+      if (picked == null || !mounted) return;
+      final bytes = await picked.readAsBytes();
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_prefAvatar, base64Encode(bytes));
+
+      if (!mounted) return;
+      setState(() => _avatarBytes = bytes);
+      _info('Foto profil berhasil diperbarui.');
+    } catch (e) {
+      _info('Gagal mengambil foto. Pastikan izin kamera/galeri diberikan.');
+    }
   }
 
   Future<void> _confirmLogout() async {
@@ -150,7 +292,7 @@ class _ProfilePageState extends State<ProfilePage> {
   void _showHelp() {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -207,7 +349,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: FilledButton(
                   onPressed: () => Navigator.of(ctx).pop(),
                   style: FilledButton.styleFrom(
-                    backgroundColor: _brand,
+                    backgroundColor: _brandFill,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -250,7 +392,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   style: GoogleFonts.poppins(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF1A1A24),
+                    color: AppColors.ink,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -270,44 +412,21 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  void _showAbout() {
-    showAboutDialog(
-      context: context,
-      applicationName: 'PETENG',
-      applicationVersion: '1.0.0',
-      applicationIcon: Container(
-        width: 52,
-        height: 52,
-        padding: const EdgeInsets.all(6),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-        ),
-        child: Image.asset(
-          'lib/assets/images/logo_bulet.png',
-          errorBuilder: (_, _, _) =>
-              const Icon(Icons.lightbulb_outline, color: _brand),
-        ),
-      ),
-      children: [
-        Text(
-          'Petakan Gelap, Temukan Terang.\n\n'
-          'PETENG membantu warga Kabupaten Indramayu melaporkan kondisi '
-          'penerangan jalan dan menemukan rute yang lebih aman pada malam hari.',
-          style: GoogleFonts.poppins(fontSize: 12, height: 1.5, color: _muted),
-        ),
-      ],
-    );
-  }
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      ThemeRebuild(child: _buildPage(context));
+
+  Widget _buildPage(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
+      value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
+        statusBarIconBrightness: AppThemeController.instance.isDark
+            ? Brightness.light
+            : Brightness.dark,
         systemNavigationBarColor: Colors.transparent,
-        systemNavigationBarIconBrightness: Brightness.dark,
+        systemNavigationBarIconBrightness: AppThemeController.instance.isDark
+            ? Brightness.light
+            : Brightness.dark,
         systemNavigationBarContrastEnforced: false,
       ),
       child: Scaffold(
@@ -317,7 +436,7 @@ class _ProfilePageState extends State<ProfilePage> {
           surfaceTintColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, color: _brand, size: 19),
+            icon: Icon(Icons.arrow_back_ios_new, color: _brand, size: 19),
             onPressed: () => Navigator.of(context).maybePop(),
           ),
           title: Text(
@@ -331,7 +450,7 @@ class _ProfilePageState extends State<ProfilePage> {
           centerTitle: true,
         ),
         body: _loading
-            ? const Center(child: CircularProgressIndicator(color: _brand))
+            ? const Center(child: CircularProgressIndicator())
             : RefreshIndicator(
                 color: _brand,
                 onRefresh: _loadProfile,
@@ -342,8 +461,6 @@ class _ProfilePageState extends State<ProfilePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildProfileHeader(),
-                      const SizedBox(height: 18),
-                      _buildStatistics(),
                       const SizedBox(height: 24),
                       _buildSection(
                         'Pengaturan Akun',
@@ -359,6 +476,12 @@ class _ProfilePageState extends State<ProfilePage> {
                             title: 'Ubah Kata Sandi',
                             subtitle: 'Perbarui kata sandi akunmu',
                             onTap: () => _comingSoon('ubah kata sandi'),
+                          ),
+                          _menuTile(
+                            icon: Icons.assignment_outlined,
+                            title: 'Laporan Saya',
+                            subtitle: 'Riwayat laporan yang sudah dikirim',
+                            onTap: () => _comingSoon('laporan saya'),
                           ),
                         ],
                       ),
@@ -376,7 +499,8 @@ class _ProfilePageState extends State<ProfilePage> {
                           _switchTile(
                             icon: Icons.dark_mode_outlined,
                             title: 'Tema Gelap',
-                            subtitle: 'Simpan preferensi tampilan gelap',
+                            subtitle:
+                                'Tampilan gelap agar nyaman di malam hari',
                             value: _darkTheme,
                             onChanged: _setDarkTheme,
                           ),
@@ -390,11 +514,6 @@ class _ProfilePageState extends State<ProfilePage> {
                             icon: Icons.help_outline,
                             title: 'Pusat Bantuan',
                             onTap: _showHelp,
-                          ),
-                          _menuTile(
-                            icon: Icons.info_outline,
-                            title: 'Tentang Peteng',
-                            onTap: _showAbout,
                           ),
                         ],
                       ),
@@ -442,20 +561,21 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Widget _buildProfileHeader() {
     final telepon = _telepon;
+    final avatar = _avatarBytes;
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [_brand, _brandSoft],
+        gradient: LinearGradient(
+          colors: [_brandFill, _brandSoft],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: _brand.withValues(alpha: .22),
+            color: _brandFill.withValues(alpha: .22),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -482,14 +602,23 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ],
                 ),
-                child: Text(
-                  _initials,
-                  style: GoogleFonts.poppins(
-                    fontSize: 30,
-                    fontWeight: FontWeight.w700,
-                    color: _brand,
-                  ),
-                ),
+                child: avatar != null
+                    ? ClipOval(
+                        child: Image.memory(
+                          avatar,
+                          width: 86,
+                          height: 86,
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                    : Text(
+                        _initials,
+                        style: GoogleFonts.poppins(
+                          fontSize: 30,
+                          fontWeight: FontWeight.w700,
+                          color: _brand,
+                        ),
+                      ),
               ),
               Positioned(
                 right: -2,
@@ -499,7 +628,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   shape: const CircleBorder(),
                   child: InkWell(
                     customBorder: const CircleBorder(),
-                    onTap: () => _comingSoon('ubah foto profil'),
+                    onTap: _pickAvatar,
                     child: const Padding(
                       padding: EdgeInsets.all(7),
                       child: Icon(
@@ -567,92 +696,17 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildStatistics() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x14000000),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildStatItem(
-              'Laporan',
-              '12',
-              Icons.warning_amber_rounded,
-              const Color(0xFFC27605),
-            ),
-          ),
-          Container(width: 1, height: 42, color: const Color(0xFFEDEEF2)),
-          Expanded(
-            child: _buildStatItem(
-              'Apresiasi',
-              '45',
-              Icons.thumb_up_alt_outlined,
-              const Color(0xFF026343),
-            ),
-          ),
-          Container(width: 1, height: 42, color: const Color(0xFFEDEEF2)),
-          Expanded(
-            child: _buildStatItem(
-              'Rute Disimpan',
-              '3',
-              Icons.bookmark_border,
-              _brand,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatItem(
-    String label,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
-    return Column(
-      children: [
-        Icon(icon, color: color, size: 22),
-        const SizedBox(height: 7),
-        Text(
-          value,
-          style: GoogleFonts.poppins(
-            fontSize: 17,
-            fontWeight: FontWeight.w700,
-            color: _brand,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: GoogleFonts.poppins(fontSize: 10.5, color: _muted),
-        ),
-      ],
-    );
-  }
-
   Widget _buildSection(String title, {required List<Widget> children}) {
     final items = <Widget>[];
     for (var i = 0; i < children.length; i++) {
       if (i > 0) {
         items.add(
-          const Divider(
+          Divider(
             height: 1,
             thickness: 1,
             indent: 62,
             endIndent: 14,
-            color: Color(0xFFEDEEF2),
+            color: AppColors.border,
           ),
         );
       }
@@ -676,7 +730,7 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(18),
             boxShadow: const [
               BoxShadow(
@@ -709,7 +763,7 @@ class _ProfilePageState extends State<ProfilePage> {
         style: GoogleFonts.poppins(
           fontSize: 13,
           fontWeight: FontWeight.w600,
-          color: const Color(0xFF1A1A24),
+          color: AppColors.ink,
         ),
       ),
       subtitle: subtitle == null
@@ -720,7 +774,7 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
       trailing: Icon(
         Icons.chevron_right_rounded,
-        color: Colors.grey[400],
+        color: AppColors.muted,
         size: 22,
       ),
       onTap: onTap,
@@ -743,7 +797,7 @@ class _ProfilePageState extends State<ProfilePage> {
         style: GoogleFonts.poppins(
           fontSize: 13,
           fontWeight: FontWeight.w600,
-          color: const Color(0xFF1A1A24),
+          color: AppColors.ink,
         ),
       ),
       subtitle: Text(
@@ -752,7 +806,7 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
       value: value,
       onChanged: onChanged,
-      activeThumbColor: _brand,
+      activeThumbColor: _brandFill,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
     );
   }

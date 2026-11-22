@@ -11,6 +11,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 
 import 'home.dart' show AppColors, AppBottomNav;
+import '../theme/app_theme.dart';
 import 'laporan_api.dart';
 import 'peta_rute.dart';
 import 'article_page.dart';
@@ -287,7 +288,7 @@ class _LaporPageState extends State<LaporPage> {
     final r = await showModalBottomSheet<PlaceResult>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -483,13 +484,20 @@ class _LaporPageState extends State<LaporPage> {
   // ------------------------------------------------------------------
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      ThemeRebuild(child: _buildPage(context));
+
+  Widget _buildPage(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
+      value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
+        statusBarIconBrightness: AppThemeController.instance.isDark
+            ? Brightness.light
+            : Brightness.dark,
         systemNavigationBarColor: Colors.transparent,
-        systemNavigationBarIconBrightness: Brightness.dark,
+        systemNavigationBarIconBrightness: AppThemeController.instance.isDark
+            ? Brightness.light
+            : Brightness.dark,
         systemNavigationBarContrastEnforced: false,
       ),
       child: Scaffold(
@@ -533,14 +541,14 @@ class _LaporPageState extends State<LaporPage> {
     return Row(
       children: [
         Material(
-          color: Colors.white,
+          color: AppColors.surface,
           elevation: 2,
           shape: const CircleBorder(),
           child: InkWell(
             customBorder: const CircleBorder(),
             onTap: () => Navigator.of(context).maybePop(),
-            child: const Padding(
-              padding: EdgeInsets.all(10),
+            child: Padding(
+              padding: const EdgeInsets.all(10),
               child: Icon(Icons.arrow_back, size: 20, color: AppColors.brand),
             ),
           ),
@@ -567,7 +575,7 @@ class _LaporPageState extends State<LaporPage> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(22),
         boxShadow: const [
           BoxShadow(
@@ -648,7 +656,7 @@ class _LaporPageState extends State<LaporPage> {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.brand,
+                    color: AppColors.brandFill,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -678,7 +686,7 @@ class _LaporPageState extends State<LaporPage> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(
+              Icon(
                 Icons.location_on_outlined,
                 size: 22,
                 color: AppColors.brand,
@@ -720,10 +728,7 @@ class _LaporPageState extends State<LaporPage> {
           _sectionHeader(
             Icons.photo_camera_outlined,
             'Bukti Visual Lapangan',
-            trailing: const _MiniChip(
-              text: 'WAJIB • 1 FOTO',
-              fg: AppColors.brand,
-            ),
+            trailing: _MiniChip(text: 'WAJIB • 1 FOTO', fg: AppColors.brand),
           ),
           const SizedBox(height: 12),
           ClipRRect(
@@ -733,7 +738,7 @@ class _LaporPageState extends State<LaporPage> {
               width: double.infinity,
               child: bytes == null
                   ? Container(
-                      color: AppColors.card,
+                      color: AppColors.surfaceAlt,
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -820,7 +825,7 @@ class _LaporPageState extends State<LaporPage> {
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.brand,
+                      backgroundColor: AppColors.brandFill,
                       foregroundColor: Colors.white,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -848,7 +853,7 @@ class _LaporPageState extends State<LaporPage> {
                     ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.brand,
-                      side: const BorderSide(color: AppColors.brand),
+                      side: BorderSide(color: AppColors.brand),
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
@@ -873,7 +878,7 @@ class _LaporPageState extends State<LaporPage> {
           _sectionHeader(
             Icons.alt_route,
             'Segmen Jalur Gelap',
-            trailing: const _MiniChip(text: 'OPSIONAL', fg: AppColors.muted),
+            trailing: _MiniChip(text: 'OPSIONAL', fg: AppColors.muted),
           ),
           const SizedBox(height: 12),
           _SegmentField(
@@ -1056,8 +1061,8 @@ class _LaporPageState extends State<LaporPage> {
                     ),
                   ),
                   selected: _kategori == k.value,
-                  selectedColor: AppColors.brand,
-                  backgroundColor: AppColors.card,
+                  selectedColor: AppColors.brandFill,
+                  backgroundColor: AppColors.surfaceAlt,
                   showCheckmark: false,
                   side: BorderSide.none,
                   onSelected: (_) => setState(() => _kategori = k.value),
@@ -1109,7 +1114,7 @@ class _LaporPageState extends State<LaporPage> {
             controller: _keteranganC,
             maxLines: 4,
             maxLength: 300,
-            style: GoogleFonts.poppins(fontSize: 13),
+            style: GoogleFonts.poppins(fontSize: 13, color: AppColors.ink),
             decoration: InputDecoration(
               hintText:
                   'Contoh: lampu di dekat persawahan mati sejak beberapa hari, jalur ramai dilewati warga malam hari. (opsional)',
@@ -1118,7 +1123,7 @@ class _LaporPageState extends State<LaporPage> {
                 color: AppColors.muted,
               ),
               filled: true,
-              fillColor: AppColors.card,
+              fillColor: AppColors.surfaceAlt,
               contentPadding: const EdgeInsets.all(14),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
@@ -1157,8 +1162,8 @@ class _LaporPageState extends State<LaporPage> {
               ),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.brand,
-              disabledBackgroundColor: AppColors.brand.withOpacity(.6),
+              backgroundColor: AppColors.brandFill,
+              disabledBackgroundColor: AppColors.brandFill.withOpacity(.6),
               foregroundColor: Colors.white,
               disabledForegroundColor: Colors.white,
               elevation: 0,
@@ -1364,7 +1369,7 @@ class _BatangRuas extends StatelessWidget {
                 width: isi,
                 height: _tinggi,
                 decoration: BoxDecoration(
-                  color: AppColors.brand,
+                  color: AppColors.brandFill,
                   borderRadius: BorderRadius.circular(_tinggi),
                 ),
               ),
@@ -1463,7 +1468,7 @@ class _SegmenMap extends StatelessWidget {
                         width: 40,
                         height: 40,
                         alignment: Alignment.topCenter,
-                        child: const Icon(
+                        child: Icon(
                           Icons.location_on,
                           color: AppColors.brand,
                           size: 38,
@@ -1523,7 +1528,7 @@ class _SegmentField extends StatelessWidget {
         const SizedBox(height: 6),
         Container(
           decoration: BoxDecoration(
-            color: AppColors.card,
+            color: AppColors.surfaceAlt,
             borderRadius: BorderRadius.circular(14),
           ),
           child: Row(
@@ -1562,11 +1567,7 @@ class _SegmentField extends StatelessWidget {
               ),
               IconButton(
                 tooltip: 'Pakai lokasi saya',
-                icon: const Icon(
-                  Icons.my_location,
-                  size: 20,
-                  color: AppColors.brand,
-                ),
+                icon: Icon(Icons.my_location, size: 20, color: AppColors.brand),
                 onPressed: onGps,
               ),
             ],
@@ -1594,7 +1595,7 @@ class _TingkatTile extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Material(
-        color: selected ? c.withOpacity(.08) : Colors.white,
+        color: selected ? c.withOpacity(.08) : AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
@@ -1604,7 +1605,7 @@ class _TingkatTile extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: selected ? c : const Color(0xFFE3E5EC),
+                color: selected ? c : AppColors.border,
                 width: selected ? 1.6 : 1,
               ),
             ),
@@ -1762,9 +1763,9 @@ class _AiSimulasiCardState extends State<_AiSimulasiCard> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE3E5EC)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1811,7 +1812,7 @@ class _AiSimulasiCardState extends State<_AiSimulasiCard> {
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.brand,
+                    backgroundColor: AppColors.brandFill,
                     foregroundColor: Colors.white,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(
@@ -1952,7 +1953,7 @@ class LaporanTerkirimPage extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: () => Navigator.of(context).maybePop(),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.brand,
+                      backgroundColor: AppColors.brandFill,
                       foregroundColor: Colors.white,
                       elevation: 0,
                       shape: RoundedRectangleBorder(

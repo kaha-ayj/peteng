@@ -6,18 +6,15 @@ import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:peteng/services/auth_api.dart';
 import 'package:peteng/services/route_api.dart';
+import 'package:peteng/theme/app_theme.dart';
 import 'profile_page.dart';
 import 'place_search.dart';
 import 'peta_rute.dart';
 import 'article_page.dart';
 import 'lapor.dart';
 
-class AppColors {
-  static const brand = Color(0xFF172554);
-  static const card = Color(0xFFF1F1EF);
-  static const muted = Color(0xFF5B6070);
-  static const glow = Color(0xFFE8D98A);
-}
+// Supaya file lain yang mengimpor `home.dart` tetap mendapat AppColors.
+export 'package:peteng/theme/app_theme.dart' show AppColors, AppThemeController;
 
 const String kLogoAsset = 'lib/assets/images/logo_sejajar.png';
 const bool kShowLogoMarker = false;
@@ -71,13 +68,20 @@ class _HomeState extends State<Home> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      ThemeRebuild(child: _buildPage(context));
+
+  Widget _buildPage(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
+      value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
+        statusBarIconBrightness: AppThemeController.instance.isDark
+            ? Brightness.light
+            : Brightness.dark,
         systemNavigationBarColor: Colors.transparent,
-        systemNavigationBarIconBrightness: Brightness.dark,
+        systemNavigationBarIconBrightness: AppThemeController.instance.isDark
+            ? Brightness.light
+            : Brightness.dark,
         systemNavigationBarContrastEnforced: false,
       ),
       child: Scaffold(
@@ -141,25 +145,36 @@ class _TopBar extends StatelessWidget {
             )
           : null,
       padding: kShowLogoMarker ? const EdgeInsets.all(4) : EdgeInsets.zero,
-      child: Image.asset(
-        kLogoAsset,
-        height: 100,
-        fit: BoxFit.contain,
-        alignment: Alignment.centerLeft,
-        errorBuilder: (_, __, ___) => Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.image_outlined, size: 28, color: AppColors.brand),
-            const SizedBox(width: 6),
-            Text(
-              'LOGO PETENG',
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppColors.brand,
+      child: Container(
+        padding: AppColors.isDark
+            ? const EdgeInsets.symmetric(horizontal: 12, vertical: 8)
+            : EdgeInsets.zero,
+        decoration: AppColors.isDark
+            ? BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+              )
+            : null,
+        child: Image.asset(
+          kLogoAsset,
+          height: 100,
+          fit: BoxFit.contain,
+          alignment: Alignment.centerLeft,
+          errorBuilder: (_, _, _) => Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.image_outlined, size: 28, color: AppColors.brandFill),
+              const SizedBox(width: 6),
+              Text(
+                'LOGO PETENG',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.brandFill,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -193,7 +208,7 @@ class _GreetingRow extends StatelessWidget {
               const SizedBox(height: 4),
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.location_on_outlined,
                     size: 15,
                     color: AppColors.muted,
@@ -229,11 +244,11 @@ class _ActionPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.only(left: 10, right: 16, top: 6, bottom: 6),
       decoration: BoxDecoration(
-        color: AppColors.brand,
+        color: AppColors.brandFill,
         borderRadius: const BorderRadius.horizontal(left: Radius.circular(30)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.brand.withOpacity(.3),
+            color: AppColors.brandFill.withOpacity(.3),
             blurRadius: 6,
             offset: const Offset(0, 3),
           ),
@@ -289,7 +304,7 @@ class _FeatureCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(22),
         boxShadow: const [
           BoxShadow(
@@ -327,7 +342,7 @@ class _FeatureCard extends StatelessWidget {
               context,
             ).push(MaterialPageRoute(builder: (_) => const PetaRutePage())),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.brand,
+              backgroundColor: AppColors.brandFill,
               foregroundColor: Colors.white,
               elevation: 0,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -455,7 +470,7 @@ class _RouteCardState extends State<_RouteCard> {
     final result = await showModalBottomSheet<PlaceResult>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -527,7 +542,7 @@ class _RouteCardState extends State<_RouteCard> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(22),
         boxShadow: const [
           BoxShadow(
@@ -580,8 +595,8 @@ class _RouteCardState extends State<_RouteCard> {
                         ),
                       ),
                       selected: i == _selectedRoute,
-                      selectedColor: AppColors.brand,
-                      backgroundColor: AppColors.card,
+                      selectedColor: AppColors.brandFill,
+                      backgroundColor: AppColors.surfaceAlt,
                       showCheckmark: false,
                       onSelected: (_) {
                         setState(() => _selectedRoute = i);
@@ -610,7 +625,7 @@ class _RouteCardState extends State<_RouteCard> {
             child: ElevatedButton(
               onPressed: _searching ? null : _searchRoute,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.brand,
+                backgroundColor: AppColors.brandFill,
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
@@ -656,7 +671,7 @@ class _LocationPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.brand,
+      color: AppColors.brandFill,
       borderRadius: BorderRadius.circular(30),
       child: InkWell(
         borderRadius: BorderRadius.circular(30),
@@ -747,7 +762,7 @@ class _RealMap extends StatelessWidget {
                   Polyline(
                     points: routes[selectedRoute].titik,
                     strokeWidth: 6,
-                    color: AppColors.brand,
+                    color: AppColors.brandFill,
                   ),
                 ],
               ),
@@ -812,8 +827,8 @@ class AppBottomNav extends StatelessWidget {
     final bottomInset = MediaQuery.of(context).viewPadding.bottom;
     return Container(
       padding: EdgeInsets.only(top: 10, bottom: 10 + bottomInset),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
         boxShadow: [
           BoxShadow(
             color: Color(0x14000000),
@@ -869,7 +884,7 @@ class _LightConditionCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: const [
           BoxShadow(

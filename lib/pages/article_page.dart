@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-// Pastikan untuk menyesuaikan lokasi import file-file di bawah ini dengan project kamu
-import 'home.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+import 'home.dart' show AppColors, AppBottomNav;
+import '../theme/app_theme.dart';
 import 'peta_rute.dart';
 import 'lapor.dart';
 import '../widgets/profile_button.dart';
 
-// import '../widgets/app_bottom_nav.dart'; // Asumsi lokasi file AppBottomNav
-// import '../utils/app_colors.dart'; // Asumsi lokasi warna AppColors
-
-// Model data untuk artikel
 class ArticleModel {
   final String title;
   final String description;
@@ -17,7 +15,6 @@ class ArticleModel {
   final String author;
   final String time;
   final Color tagColor;
-  final String imageUrl;
 
   ArticleModel({
     required this.title,
@@ -26,42 +23,55 @@ class ArticleModel {
     required this.author,
     required this.time,
     required this.tagColor,
-    required this.imageUrl,
   });
 }
 
 class ArticlePage extends StatefulWidget {
-  const ArticlePage({Key? key}) : super(key: key);
+  const ArticlePage({super.key});
 
   @override
   State<ArticlePage> createState() => _ArticlePageState();
 }
 
 class _ArticlePageState extends State<ArticlePage> {
-  // Index 3 adalah untuk tab Artikel
-  int _navIndex = 3;
+  final int _navIndex = 3;
+  int _selectedCategory = 0;
+  String _searchQuery = '';
+  final TextEditingController _searchC = TextEditingController();
   late Future<List<ArticleModel>> _futureArticles;
+
+  final List<String> _categories = [
+    'Semua',
+    'Infrastruktur',
+    'Keselamatan',
+    'Agenda',
+  ];
 
   @override
   void initState() {
     super.initState();
-    _futureArticles = fetchRealIndramayuNews();
+    _futureArticles = _fetchArticles();
   }
 
-  // Fungsi navigasi yang disamakan dengan lapor.dart & peta_rute.dart
+  @override
+  void dispose() {
+    _searchC.dispose();
+    super.dispose();
+  }
+
   void _onNavTap(int i) {
-    if (i == 3) return; // Sudah di halaman Artikel, tidak perlu pindah
+    if (i == 3) return;
 
     switch (i) {
-      case 0: // Home
+      case 0:
         Navigator.of(context).popUntil((r) => r.isFirst);
         break;
-      case 1: // Peta & Rute
+      case 1:
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const PetaRutePage()),
         );
         break;
-      case 2: // Lapor
+      case 2:
         Navigator.of(
           context,
         ).pushReplacement(MaterialPageRoute(builder: (_) => const LaporPage()));
@@ -69,433 +79,492 @@ class _ArticlePageState extends State<ArticlePage> {
     }
   }
 
-  Future<List<ArticleModel>> fetchRealIndramayuNews() async {
-    await Future.delayed(const Duration(milliseconds: 1500));
+  Future<List<ArticleModel>> _fetchArticles() async {
+    await Future.delayed(const Duration(milliseconds: 1200));
     return [
       ArticleModel(
-        title: 'Jabar Punya 18 Unit Mobile Batching Plant, Bangun Jalan...',
+        title: 'Pemkab Indramayu Tegaskan Komitmen Perbaikan PJU',
+        description:
+            'Langkah strategis menjamin keamanan pemudik dan warga lokal melalui program perbaikan lampu penerangan jalan.',
+        tag: 'Infrastruktur',
+        author: 'Humas Indramayu',
+        time: '2 jam lalu',
+        tagColor: Colors.blue,
+      ),
+      ArticleModel(
+        title: 'Jabar Punya 18 Unit Mobile Batching Plant, Bangun Jalan Desa',
         description:
             'Pemprov Jabar luncurkan fasilitas pengolah beton berjalan untuk mempermudah perbaikan jalan desa.',
-        tag: 'Infrastruktur Jalan',
+        tag: 'Infrastruktur',
         author: 'Radar Cirebon',
-        time: 'Terkini',
+        time: '5 jam lalu',
         tagColor: Colors.blue,
-        imageUrl: 'https://via.placeholder.com/150/4G829',
+      ),
+      ArticleModel(
+        title: 'Tips Aman Berkendara Malam Hari di Jalan Minim Penerangan',
+        description:
+            'Panduan lengkap untuk pengendara motor dan mobil agar tetap aman saat melewati ruas jalan gelap.',
+        tag: 'Keselamatan',
+        author: 'Tim PETENG',
+        time: '1 hari lalu',
+        tagColor: Colors.orange,
       ),
       ArticleModel(
         title:
             'Truk Trailer dan Minibus Terbakar di SPBU Sukagumiwang Indramayu',
         description:
-            'Kecelakaan akibat percikan api saat mengisi BBM, mengingatkan pentingnya keselamatan.',
-        tag: 'Edukasi Keselamatan',
+            'Kecelakaan akibat percikan api saat mengisi BBM, mengingatkan pentingnya keselamatan di jalan.',
+        tag: 'Keselamatan',
         author: 'Berita Indramayu',
         time: '28 Sep 2026',
         tagColor: Colors.orange,
-        imageUrl: 'https://via.placeholder.com/150/FF6B6B',
+      ),
+      ArticleModel(
+        title: 'Agenda Musrenbang Kecamatan Indramayu Tahun 2027',
+        description:
+            'Jadwal dan lokasi pelaksanaan Musrenbang untuk penyusunan prioritas pembangunan infrastruktur jalan.',
+        tag: 'Agenda',
+        author: 'Bappeda Indramayu',
+        time: '30 Sep 2026',
+        tagColor: Colors.green,
       ),
     ];
   }
 
   @override
-  Widget build(BuildContext context) {
-    // Mempertahankan style dari Home (opsional, sesuaikan AppColors.card jika ada)
+  Widget build(BuildContext context) =>
+      ThemeRebuild(child: _buildPage(context));
+
+  Widget _buildPage(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
+      value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
+        statusBarIconBrightness: AppThemeController.instance.isDark
+            ? Brightness.light
+            : Brightness.dark,
         systemNavigationBarColor: Colors.transparent,
-        systemNavigationBarIconBrightness: Brightness.dark,
+        systemNavigationBarIconBrightness: AppThemeController.instance.isDark
+            ? Brightness.light
+            : Brightness.dark,
         systemNavigationBarContrastEnforced: false,
       ),
       child: Scaffold(
-        backgroundColor: const Color(
-          0xFFF8F9FA,
-        ), // atau AppColors.card menyesuaikan temamu
-        // Memakai AppBottomNav persis seperti di halaman Home
+        backgroundColor: AppColors.card,
         bottomNavigationBar: AppBottomNav(index: _navIndex, onTap: _onNavTap),
+        body: SafeArea(
+          bottom: false,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(),
+                const SizedBox(height: 20),
+                _buildSearchBar(),
+                const SizedBox(height: 16),
+                _buildCategoryChips(),
+                const SizedBox(height: 20),
+                _buildArticleList(),
+                const SizedBox(height: 20),
+                _buildCTACard(),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
-        appBar: AppBar(
-          automaticallyImplyLeading:
-              false, // Menghilangkan tombol back bawaan Scaffold
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          title: Row(
+  Widget _buildHeader() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.wb_sunny, color: Colors.amber, size: 20),
-              const SizedBox(width: 8),
-              const Text(
-                'Siang',
-                style: TextStyle(
-                  color: Colors.black87,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
+              Text(
+                'PORTAL INFORMASI',
+                style: GoogleFonts.poppins(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: .8,
+                  color: AppColors.muted,
                 ),
               ),
-              const Spacer(),
+              const SizedBox(height: 4),
               Text(
-                'INDRAMAYU',
-                style: TextStyle(
-                  color: Colors.blue[800],
+                'Artikel & Buletin PJU',
+                style: GoogleFonts.poppins(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.brand,
+                  height: 1.2,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Kabar terbaru seputar penerangan jalan dan keselamatan di Indramayu.',
+                style: GoogleFonts.poppins(
                   fontSize: 12,
-                  fontWeight: FontWeight.bold,
+                  color: AppColors.muted,
+                  height: 1.4,
                 ),
               ),
             ],
           ),
-          actions: const [
-            Padding(
-              padding: EdgeInsets.only(right: 16),
-              child: ProfileButton(),
-            ),
-          ],
         ),
+        const SizedBox(width: 12),
+        const ProfileButton(),
+      ],
+    );
+  }
 
-        body: SafeArea(
-          bottom: false,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'PORTAL KOMUNIKASI PUBLIK',
-                  style: TextStyle(
-                    color: Colors.blue[700],
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Pusat Informasi & Buletin PJU',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A1A24),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Kabar resmi progres perbaikan jalan, edukasi keselamatan malam, & agenda terbaru Indramayu.',
-                  style: TextStyle(color: Colors.grey[700], fontSize: 14),
-                ),
-                const SizedBox(height: 16),
-
-                // Search Bar
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: TextField(
-                    decoration: InputDecoration(
-                      hintText: 'Cari artikel, nama jalan...',
-                      hintStyle: TextStyle(color: Colors.grey[500]),
-                      prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Kategori Chips
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _buildChip('Semua Berita', isActive: true),
-                      _buildChip('Infrastruktur', isActive: false),
-                      _buildChip('Edukasi Keselamatan', isActive: false),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                _buildFeaturedArticle(),
-
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Berita Indramayu Terbaru',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1A1A24),
-                      ),
-                    ),
-                    Text(
-                      'Real-time',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                FutureBuilder<List<ArticleModel>>(
-                  future: _futureArticles,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(20),
-                          child: CircularProgressIndicator(),
-                        ),
-                      );
-                    }
-                    if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                      return Column(
-                        children: snapshot.data!
-                            .map((a) => _buildArticleItem(a))
-                            .toList(),
-                      );
-                    }
-                    return const Center(child: Text('Tidak ada artikel.'));
+  Widget _buildSearchBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0F000000),
+            blurRadius: 8,
+            offset: Offset(0, 3),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: _searchC,
+        onChanged: (value) => setState(() => _searchQuery = value),
+        textInputAction: TextInputAction.search,
+        style: GoogleFonts.poppins(fontSize: 13, color: AppColors.ink),
+        decoration: InputDecoration(
+          hintText: 'Cari artikel, berita...',
+          hintStyle: GoogleFonts.poppins(fontSize: 13, color: AppColors.muted),
+          prefixIcon: Icon(Icons.search, color: AppColors.brand, size: 22),
+          suffixIcon: _searchQuery.isEmpty
+              ? null
+              : IconButton(
+                  tooltip: 'Hapus pencarian',
+                  icon: const Icon(Icons.close, size: 19),
+                  color: AppColors.muted,
+                  onPressed: () {
+                    _searchC.clear();
+                    setState(() => _searchQuery = '');
                   },
                 ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(vertical: 14),
+        ),
+      ),
+    );
+  }
 
-                const SizedBox(height: 16),
-                _buildCTACard(),
-                const SizedBox(
-                  height: 20,
-                ), // Spasi ekstra di bawah agar tidak tertutup nav bar
-              ],
+  Widget _buildCategoryChips() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: List.generate(_categories.length, (i) {
+          final active = i == _selectedCategory;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: ChoiceChip(
+              label: Text(
+                _categories[i],
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: active ? Colors.white : AppColors.brand,
+                ),
+              ),
+              selected: active,
+              selectedColor: AppColors.brandFill,
+              backgroundColor: AppColors.surface,
+              showCheckmark: false,
+              side: active
+                  ? BorderSide.none
+                  : BorderSide(color: AppColors.border),
+              onSelected: (_) => setState(() => _selectedCategory = i),
             ),
-          ),
-        ),
+          );
+        }),
       ),
     );
   }
 
-  // --- WIDGET HELPER ---
-  Widget _buildChip(String label, {required bool isActive}) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 8.0),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isActive ? const Color(0xFF00C4FF) : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: isActive ? null : Border.all(color: Colors.grey[300]!),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isActive ? Colors.white : Colors.black87,
-            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-      ),
-    );
-  }
+  Widget _buildArticleList() {
+    return FutureBuilder<List<ArticleModel>>(
+      future: _futureArticles,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(40),
+              child: CircularProgressIndicator(color: AppColors.brand),
+            ),
+          );
+        }
 
-  Widget _buildFeaturedArticle() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            height: 180,
-            decoration: const BoxDecoration(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-              color: Colors.grey,
-              image: DecorationImage(
-                image: NetworkImage('https://via.placeholder.com/400x200'),
-                fit: BoxFit.cover,
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(40),
+              child: Text(
+                'Belum ada artikel.',
+                style: GoogleFonts.poppins(color: AppColors.muted),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          );
+        }
+
+        final articles = snapshot.data!;
+        final query = _searchQuery.trim().toLowerCase();
+        final filtered = articles.where((a) {
+          final categoryMatch =
+              _selectedCategory == 0 || a.tag == _categories[_selectedCategory];
+          final searchMatch =
+              query.isEmpty ||
+              a.title.toLowerCase().contains(query) ||
+              a.description.toLowerCase().contains(query) ||
+              a.author.toLowerCase().contains(query) ||
+              a.tag.toLowerCase().contains(query);
+          return categoryMatch && searchMatch;
+        }).toList();
+
+        if (filtered.isEmpty) {
+          final adaPencarian = query.isNotEmpty;
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(40),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.article_outlined,
+                    size: 42,
+                    color: AppColors.brand.withValues(alpha: .3),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    adaPencarian
+                        ? 'Artikel dengan kata kunci "$_searchQuery" tidak ditemukan.'
+                        : 'Tidak ada artikel untuk kategori ini.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12.5,
+                      color: AppColors.muted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                const Text(
-                  'Pemkab Indramayu Tegaskan Komitmen Perbaikan PJU',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A1A24),
+                Text(
+                  'Berita Terbaru',
+                  style: GoogleFonts.poppins(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.brand,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const Spacer(),
                 Text(
-                  'Langkah strategis menjamin keamanan pemudik dan warga lokal...',
-                  style: TextStyle(color: Colors.grey[700], fontSize: 13),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.remove_red_eye,
-                      size: 16,
-                      color: Colors.blue[600],
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '1.2k Pembaca',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                    ),
-                  ],
+                  '${filtered.length} artikel',
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    color: AppColors.muted,
+                  ),
                 ),
               ],
             ),
-          ),
-        ],
-      ),
+            const SizedBox(height: 12),
+            for (final article in filtered) _buildArticleCard(article),
+          ],
+        );
+      },
     );
   }
 
-  Widget _buildArticleItem(ArticleModel article) {
+  Widget _buildArticleCard(ArticleModel article) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: const [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+            color: Color(0x0F000000),
+            blurRadius: 8,
+            offset: Offset(0, 3),
           ),
         ],
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
+                    horizontal: 10,
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: article.tagColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(4),
+                    color: article.tagColor.withValues(alpha: .1),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     article.tag,
-                    style: TextStyle(
+                    style: GoogleFonts.poppins(
                       color: article.tagColor,
                       fontSize: 10,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
-                const SizedBox(height: 8),
+                const Spacer(),
                 Text(
-                  article.title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: Color(0xFF1A1A24),
+                  article.time,
+                  style: GoogleFonts.poppins(
+                    fontSize: 10,
+                    color: AppColors.muted,
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  article.description,
-                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
-          ),
-          const SizedBox(width: 12),
-          Container(
-            width: 70,
-            height: 70,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              color: Colors.grey[300],
-              image: DecorationImage(
-                image: NetworkImage(article.imageUrl),
-                fit: BoxFit.cover,
+            const SizedBox(height: 10),
+            Text(
+              article.title,
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+                color: AppColors.ink,
+                height: 1.3,
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 6),
+            Text(
+              article.description,
+              style: GoogleFonts.poppins(
+                color: AppColors.muted,
+                fontSize: 12,
+                height: 1.4,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Icon(
+                  Icons.person_outline,
+                  size: 14,
+                  color: AppColors.brand.withValues(alpha: .6),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  article.author,
+                  style: GoogleFonts.poppins(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.muted,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildCTACard() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.blue[900]!, const Color(0xFF1E213A)],
+          colors: [AppColors.brandFill, AppColors.brandSoft],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.brandFill.withValues(alpha: .22),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.lightbulb_outline,
-                color: Colors.white,
-                size: 28,
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: .15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.lightbulb_outline,
+                  color: Colors.white,
+                  size: 22,
+                ),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Ingin Ruas Jalan Anda Masuk Rencana Perbaikan?',
-                  style: TextStyle(
+                  'Ruas Jalan Gelap di Sekitarmu?',
+                  style: GoogleFonts.poppins(
                     color: Colors.white,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w700,
                     fontSize: 14,
+                    height: 1.3,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
+          Text(
+            'Bantu warga Indramayu dengan melaporkan kondisi penerangan jalan.',
+            style: GoogleFonts.poppins(
+              color: Colors.white.withValues(alpha: .75),
+              fontSize: 11.5,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 14),
           SizedBox(
             width: double.infinity,
+            height: 44,
             child: ElevatedButton.icon(
-              onPressed: () {
-                _onNavTap(2); // Otomatis arahkan ke tab Lapor (index 2)
-              },
-              icon: const Icon(Icons.add_location_alt, color: Colors.black87),
-              label: const Text(
+              onPressed: () => _onNavTap(2),
+              icon: const Icon(Icons.campaign_outlined, size: 18),
+              label: Text(
                 'Lapor Sekarang',
-                style: TextStyle(
-                  color: Colors.black87,
-                  fontWeight: FontWeight.bold,
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
                 ),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF00C4FF),
+                foregroundColor: Colors.white,
+                elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
             ),

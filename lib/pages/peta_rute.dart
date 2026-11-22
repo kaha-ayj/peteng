@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/foundation.dart';
 import 'article_page.dart';
 import 'home.dart' show AppColors;
+import '../theme/app_theme.dart';
 import 'place_search.dart';
 import '../services/route_api.dart';
 import '../widgets/profile_button.dart';
@@ -167,7 +168,7 @@ class _PetaRutePageState extends State<PetaRutePage> {
     final r = await showModalBottomSheet<PlaceResult>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -291,7 +292,7 @@ class _PetaRutePageState extends State<PetaRutePage> {
           Polyline(
             points: List<LatLng>.from(titikAktif),
             strokeWidth: 6,
-            color: _warnaPenerangan(statusAktif!),
+            color: _warnaPenerangan(statusAktif),
           ),
         );
       }
@@ -411,13 +412,20 @@ class _PetaRutePageState extends State<PetaRutePage> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      ThemeRebuild(child: _buildPage(context));
+
+  Widget _buildPage(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
+      value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
+        statusBarIconBrightness: AppThemeController.instance.isDark
+            ? Brightness.light
+            : Brightness.dark,
         systemNavigationBarColor: Colors.transparent,
-        systemNavigationBarIconBrightness: Brightness.dark,
+        systemNavigationBarIconBrightness: AppThemeController.instance.isDark
+            ? Brightness.light
+            : Brightness.dark,
         systemNavigationBarContrastEnforced: false,
       ),
       child: Scaffold(
@@ -459,14 +467,14 @@ class _PetaRutePageState extends State<PetaRutePage> {
     return Row(
       children: [
         Material(
-          color: Colors.white,
+          color: AppColors.surface,
           elevation: 2,
           shape: const CircleBorder(),
           child: InkWell(
             customBorder: const CircleBorder(),
             onTap: () => Navigator.of(context).maybePop(),
-            child: const Padding(
-              padding: EdgeInsets.all(10),
+            child: Padding(
+              padding: const EdgeInsets.all(10),
               child: Icon(Icons.arrow_back, size: 20, color: AppColors.brand),
             ),
           ),
@@ -487,7 +495,7 @@ class _PetaRutePageState extends State<PetaRutePage> {
         if (kDebugMode)
           IconButton(
             tooltip: 'Uji koordinat backend',
-            icon: const Icon(Icons.science_outlined, color: AppColors.brand),
+            icon: Icon(Icons.science_outlined, color: AppColors.brand),
             onPressed: _useTestCoordinates,
           ),
 
@@ -498,7 +506,7 @@ class _PetaRutePageState extends State<PetaRutePage> {
   }
 
   BoxDecoration _cardDeco({double radius = 22}) => BoxDecoration(
-    color: Colors.white,
+    color: AppColors.surface,
     borderRadius: BorderRadius.circular(radius),
     boxShadow: const [
       BoxShadow(color: Color(0x14000000), blurRadius: 10, offset: Offset(0, 4)),
@@ -529,7 +537,7 @@ class _PetaRutePageState extends State<PetaRutePage> {
                   )
                 : IconButton(
                     tooltip: 'Pakai lokasi saya',
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.my_location,
                       color: AppColors.brand,
                       size: 22,
@@ -547,11 +555,7 @@ class _PetaRutePageState extends State<PetaRutePage> {
             onTap: () => _pickPoint(isOrigin: false),
             trailing: IconButton(
               tooltip: 'Tukar titik',
-              icon: const Icon(
-                Icons.swap_vert,
-                color: AppColors.brand,
-                size: 22,
-              ),
+              icon: Icon(Icons.swap_vert, color: AppColors.brand, size: 22),
               onPressed: _swap,
             ),
           ),
@@ -668,21 +672,21 @@ class _PetaRutePageState extends State<PetaRutePage> {
                   icon: Icons.map_outlined,
                   text: 'PETA RUTE',
                   fg: AppColors.brand,
-                  bg: Colors.white.withOpacity(.92),
+                  bg: AppColors.surface.withOpacity(.92),
                 ),
               ),
               Positioned(
                 right: 10,
                 bottom: 10,
                 child: Material(
-                  color: Colors.white,
+                  color: AppColors.surface,
                   elevation: 2,
                   shape: const CircleBorder(),
                   child: InkWell(
                     customBorder: const CircleBorder(),
                     onTap: _fitRoute,
-                    child: const Padding(
-                      padding: EdgeInsets.all(9),
+                    child: Padding(
+                      padding: const EdgeInsets.all(9),
                       child: Icon(
                         Icons.center_focus_strong,
                         size: 20,
@@ -784,19 +788,20 @@ class _PetaRutePageState extends State<PetaRutePage> {
         'dipastikan aman.';
   }
 
-  Widget _hint(IconData icon, String text, {Color color = AppColors.muted}) {
+  Widget _hint(IconData icon, String text, {Color? color}) {
+    final c = color ?? AppColors.muted;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: _cardDeco(radius: 16),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: color),
+          Icon(icon, size: 20, color: c),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               text,
-              style: GoogleFonts.poppins(fontSize: 12, color: color),
+              style: GoogleFonts.poppins(fontSize: 12, color: c),
             ),
           ),
         ],
@@ -808,9 +813,9 @@ class _PetaRutePageState extends State<PetaRutePage> {
   Widget _actionBar() {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0x14000000))),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border(top: BorderSide(color: AppColors.border)),
       ),
       child: Row(
         children: [
@@ -853,7 +858,7 @@ class _PetaRutePageState extends State<PetaRutePage> {
                   ),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.brand,
+                  backgroundColor: AppColors.brandFill,
                   foregroundColor: Colors.white,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
@@ -894,8 +899,8 @@ class _BottomNav extends StatelessWidget {
     final bottomInset = MediaQuery.of(context).viewPadding.bottom;
     return Container(
       padding: EdgeInsets.only(top: 10, bottom: 10 + bottomInset),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
         boxShadow: [
           BoxShadow(
             color: Color(0x14000000),
@@ -1027,7 +1032,7 @@ class _ModeTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final fg = selected ? Colors.white : AppColors.brand;
     return Material(
-      color: selected ? AppColors.brand : Colors.white,
+      color: selected ? AppColors.brandFill : AppColors.surface,
       borderRadius: BorderRadius.circular(14),
       elevation: selected ? 0 : 1,
       shadowColor: const Color(0x33000000),
@@ -1129,7 +1134,7 @@ class _OptionCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Material(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         elevation: 1,
         shadowColor: const Color(0x33000000),
@@ -1166,7 +1171,7 @@ class _OptionCard extends StatelessWidget {
                     ],
                     const Spacer(),
                     if (selected)
-                      const Icon(
+                      Icon(
                         Icons.check_circle,
                         size: 18,
                         color: AppColors.brand,
@@ -1252,21 +1257,17 @@ class _Tag extends StatelessWidget {
 }
 
 class _Stat extends StatelessWidget {
-  const _Stat({
-    required this.icon,
-    required this.text,
-    this.color = AppColors.brand,
-  });
+  const _Stat({required this.icon, required this.text, this.color});
   final IconData icon;
   final String text;
-  final Color color;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 15, color: color),
+        Icon(icon, size: 15, color: color ?? AppColors.brand),
         const SizedBox(width: 4),
         Text(
           text,

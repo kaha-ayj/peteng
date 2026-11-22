@@ -1,17 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:peteng/services/auth_api.dart';
+import 'package:peteng/theme/app_theme.dart';
 import 'sign_up.dart';
 import 'home.dart';
-
-class AppColors {
-  static const brand = Color(0xFF172554);
-  static const brandSoft = Color(0xFF46507A);
-  static const card = Color(0xFFF1F1EF);
-  static const muted = Color(0xFF5B6070);
-  static const glow = Color(0xFFE8D98A);
-}
 
 const String kLogoAsset = 'lib/assets/images/logo_bulet.png';
 
@@ -86,7 +80,10 @@ class _LoginPageState extends State<LoginPage> {
   static const double _maxW = 420;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      ThemeRebuild(child: _buildPage(context));
+
+  Widget _buildPage(BuildContext context) {
     final media = MediaQuery.of(context);
 
     final fullH = media.size.height;
@@ -94,42 +91,51 @@ class _LoginPageState extends State<LoginPage> {
 
     final headerH = (fullH * 0.30).clamp(190.0, 290.0).toDouble() + topInset;
 
-    return Scaffold(
-      backgroundColor: AppColors.card,
-      resizeToAvoidBottomInset: true,
-      body: SingleChildScrollView(
-        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        child: SizedBox(
-          width: double.infinity,
-          child: Stack(
-            clipBehavior: Clip.hardEdge,
-            children: [
-              Positioned(
-                right: -55,
-                top: fullH * 0.70,
-                child: const _Dot(size: 110),
-              ),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: AppColors.card,
+        resizeToAvoidBottomInset: true,
+        body: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          child: SizedBox(
+            width: double.infinity,
+            child: Stack(
+              clipBehavior: Clip.hardEdge,
+              children: [
+                Positioned(
+                  right: -55,
+                  top: fullH * 0.70,
+                  child: const _Dot(size: 110),
+                ),
 
-              const Positioned(left: -60, bottom: -60, child: _Dot(size: 150)),
+                const Positioned(
+                  left: -60,
+                  bottom: -60,
+                  child: _Dot(size: 150),
+                ),
 
-              Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: _maxW),
+                Center(
                   child: ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: fullH),
-                    child: IntrinsicHeight(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _Header(height: headerH, topInset: topInset),
-                          Expanded(child: _buildForm(media.viewPadding.bottom)),
-                        ],
+                    constraints: const BoxConstraints(maxWidth: _maxW),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(minHeight: fullH),
+                      child: IntrinsicHeight(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _Header(height: headerH, topInset: topInset),
+                            Expanded(
+                              child: _buildForm(media.viewPadding.bottom),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -276,10 +282,10 @@ class _LoginPageState extends State<LoginPage> {
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _submit,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.brand,
+                    backgroundColor: AppColors.brandFill,
                     foregroundColor: Colors.white,
                     elevation: 6,
-                    shadowColor: AppColors.brand.withOpacity(.5),
+                    shadowColor: AppColors.brandFill.withOpacity(.5),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -311,7 +317,7 @@ class _LoginPageState extends State<LoginPage> {
                 width: 210,
                 child: Row(
                   children: [
-                    const Expanded(child: Divider(color: AppColors.muted)),
+                    Expanded(child: Divider(color: AppColors.muted)),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       child: Text(
@@ -322,7 +328,7 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
                     ),
-                    const Expanded(child: Divider(color: AppColors.muted)),
+                    Expanded(child: Divider(color: AppColors.muted)),
                   ],
                 ),
               ),
@@ -376,7 +382,7 @@ class _LoginPageState extends State<LoginPage> {
                       fontSize: 12,
                       color: AppColors.muted,
                     ),
-                    children: const [
+                    children: [
                       TextSpan(
                         text: 'Sign Up',
                         style: TextStyle(
@@ -410,11 +416,11 @@ class _Header extends StatelessWidget {
       height: height,
       padding: EdgeInsets.fromLTRB(20, 14 + topInset, 20, 26),
       decoration: BoxDecoration(
-        color: AppColors.brand,
+        color: AppColors.brandFill,
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(36)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.brand.withOpacity(.35),
+            color: AppColors.brandFill.withOpacity(.35),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -505,20 +511,16 @@ class _LogoSlot extends StatelessWidget {
         child: Image.asset(
           kLogoAsset,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => Column(
+          errorBuilder: (_, _, _) => Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.image_outlined,
-                size: 22,
-                color: AppColors.brand,
-              ),
+              Icon(Icons.image_outlined, size: 22, color: AppColors.brandFill),
               Text(
                 'LOGO',
                 style: GoogleFonts.poppins(
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.brand,
+                  color: AppColors.brandFill,
                 ),
               ),
             ],
@@ -573,7 +575,7 @@ class _Field extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: AppColors.surfaceAlt,
         borderRadius: BorderRadius.circular(14),
         boxShadow: const [
           BoxShadow(
@@ -588,7 +590,7 @@ class _Field extends StatelessWidget {
         obscureText: obscure,
         keyboardType: keyboardType,
         validator: validator,
-        style: GoogleFonts.poppins(fontSize: 13, color: AppColors.brand),
+        style: GoogleFonts.poppins(fontSize: 13, color: AppColors.ink),
         decoration: InputDecoration(
           errorStyle: GoogleFonts.poppins(fontSize: 11, height: 1.1),
           hintText: hint,
@@ -599,7 +601,7 @@ class _Field extends StatelessWidget {
           enabledBorder: InputBorder.none,
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: AppColors.brand, width: 2),
+            borderSide: BorderSide(color: AppColors.brand, width: 2),
           ),
           errorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
@@ -633,7 +635,7 @@ class _SocialButton extends StatelessWidget {
       button: true,
       label: semanticLabel,
       child: Material(
-        color: AppColors.card,
+        color: AppColors.surfaceAlt,
         elevation: 2,
         borderRadius: BorderRadius.circular(10),
         child: InkWell(
@@ -665,7 +667,7 @@ class _Dot extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.brandSoft,
         shape: BoxShape.circle,
       ),

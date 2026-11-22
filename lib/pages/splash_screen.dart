@@ -1,5 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:peteng/services/auth_api.dart';
+import 'package:peteng/theme/app_theme.dart';
 import 'landing_page.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -14,6 +16,7 @@ class _SplashScreenState extends State<SplashScreen>
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
+  Timer? _timer;
 
   @override
   void initState() {
@@ -33,7 +36,7 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller.forward();
 
-    Future.delayed(const Duration(seconds: 3), () {
+    _timer = Timer(const Duration(seconds: 3), () {
       if (!mounted) return;
 
       Navigator.pushReplacement(
@@ -45,20 +48,31 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   void dispose() {
+    _timer?.cancel();
     _controller.dispose();
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      ThemeRebuild(child: _buildPage(context));
+
+  Widget _buildPage(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F2F0),
+      backgroundColor: AppColors.card,
       body: Center(
         child: FadeTransition(
           opacity: _fadeAnimation,
           child: ScaleTransition(
             scale: _scaleAnimation,
-            child: Image.asset('lib/assets/images/logo_aja.png', width: 100),
+            child: Container(
+              padding: const EdgeInsets.all(18),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: Image.asset('lib/assets/images/logo_aja.png', width: 84),
+            ),
           ),
         ),
       ),

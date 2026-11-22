@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 
 import 'home.dart' show AppColors;
+import '../theme/app_theme.dart';
 
 class PlaceResult {
   const PlaceResult(this.name, this.point);
@@ -96,7 +97,10 @@ class _PlaceSearchSheetState extends State<PlaceSearchSheet> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      ThemeRebuild(child: _buildPage(context));
+
+  Widget _buildPage(BuildContext context) {
     final bottom = MediaQuery.of(context).viewInsets.bottom;
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottom),
@@ -119,7 +123,7 @@ class _PlaceSearchSheetState extends State<PlaceSearchSheet> {
               autofocus: true,
               textInputAction: TextInputAction.search,
               onSubmitted: (_) => _search(),
-              style: GoogleFonts.poppins(fontSize: 14),
+              style: GoogleFonts.poppins(fontSize: 14, color: AppColors.ink),
               decoration: InputDecoration(
                 hintText: 'Nama jalan, tempat, atau desa',
                 hintStyle: GoogleFonts.poppins(
@@ -127,7 +131,7 @@ class _PlaceSearchSheetState extends State<PlaceSearchSheet> {
                   color: AppColors.muted,
                 ),
                 filled: true,
-                fillColor: AppColors.card,
+                fillColor: AppColors.surfaceAlt,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 12,
@@ -137,7 +141,7 @@ class _PlaceSearchSheetState extends State<PlaceSearchSheet> {
                   borderSide: BorderSide.none,
                 ),
                 suffixIcon: IconButton(
-                  icon: const Icon(Icons.search, color: AppColors.brand),
+                  icon: Icon(Icons.search, color: AppColors.brand),
                   onPressed: _search,
                 ),
               ),
@@ -169,7 +173,7 @@ class _PlaceSearchSheetState extends State<PlaceSearchSheet> {
                     return ListTile(
                       dense: true,
                       contentPadding: EdgeInsets.zero,
-                      leading: const Icon(
+                      leading: Icon(
                         Icons.place_outlined,
                         color: AppColors.brand,
                       ),
