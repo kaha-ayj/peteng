@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:peteng/services/auth_api.dart';
 import 'package:peteng/services/google_auth.dart';
 import 'verify_email_page.dart';
+import 'package:peteng/services/google_auth.dart';
+import 'verify_email_page.dart';
 import 'package:peteng/theme/app_theme.dart';
 
 const String kLogoAsset = 'lib/assets/images/logo_bulet.png';

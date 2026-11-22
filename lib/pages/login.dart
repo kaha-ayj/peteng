@@ -3,12 +3,21 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:peteng/services/auth_api.dart';
-import 'package:peteng/theme/app_theme.dart';
 import 'package:peteng/services/google_auth.dart';
+import 'package:peteng/theme/app_theme.dart';
 
 import 'home.dart';
 import 'sign_up.dart';
 import 'verify_email_page.dart';
+import 'verify_email_page.dart';
+
+class AppColors {
+  static const brand = Color(0xFF172554);
+  static const brandSoft = Color(0xFF46507A);
+  static const card = Color(0xFFF1F1EF);
+  static const muted = Color(0xFF5B6070);
+  static const glow = Color(0xFFE8D98A);
+}
 
 const String kLogoAsset = 'lib/assets/images/logo_bulet.png';
 
@@ -416,7 +425,7 @@ class _LoginPageState extends State<LoginPage> {
 
                 _SocialButton(
                   semanticLabel: 'Login dengan Facebook',
-                  onTap: () => _info('Login dengan Facebook belum tersedia.'),
+                  onTap: () => _info('Login dengan Facebook'),
                   child: const Icon(
                     Icons.facebook,
                     size: 20,
@@ -571,7 +580,7 @@ class _LogoSlot extends StatelessWidget {
         child: Image.asset(
           kLogoAsset,
           fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => Column(
+          errorBuilder: (context, error, stackTrace) => Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.image_outlined, size: 22, color: AppColors.brandFill),
