@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "693709928153",
+    "project_id": "peteng-8a5f7",
+    "storage_bucket": "peteng-8a5f7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:693709928153:android:102d869ae8c4f1b62a70c8",
+        "android_client_info": {
+          "package_name": "com.example.peteng"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "693709928153-51em1ca1orfuqkev2b71pl1f2tb8c47m.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.peteng",
+            "certificate_hash": "f877868c030170b2feb53b49ffcb7324daf11c41"
+          }
+        },
+        {
+          "client_id": "693709928153-dbk9il0pb2avmn2lugte0kl49mcjhni8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBEEsGHmHWxbSddHLcb63C4CIUxZJjvbRc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "693709928153-dbk9il0pb2avmn2lugte0kl49mcjhni8.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
