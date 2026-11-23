@@ -137,6 +137,10 @@ class _TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final logoAsset = AppColors.isDark
+        ? 'lib/assets/images/logo_sejajar_dark.png'
+        : kLogoAsset;
+
     return Container(
       decoration: kShowLogoMarker
           ? BoxDecoration(
@@ -145,36 +149,25 @@ class _TopBar extends StatelessWidget {
             )
           : null,
       padding: kShowLogoMarker ? const EdgeInsets.all(4) : EdgeInsets.zero,
-      child: Container(
-        padding: AppColors.isDark
-            ? const EdgeInsets.symmetric(horizontal: 12, vertical: 8)
-            : EdgeInsets.zero,
-        decoration: AppColors.isDark
-            ? BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-              )
-            : null,
-        child: Image.asset(
-          kLogoAsset,
-          height: 100,
-          fit: BoxFit.contain,
-          alignment: Alignment.centerLeft,
-          errorBuilder: (_, _, _) => Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.image_outlined, size: 28, color: AppColors.brandFill),
-              const SizedBox(width: 6),
-              Text(
-                'LOGO PETENG',
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.brandFill,
-                ),
+      child: Image.asset(
+        logoAsset,
+        height: 100,
+        fit: BoxFit.contain,
+        alignment: Alignment.centerLeft,
+        errorBuilder: (_, _, _) => Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.image_outlined, size: 28, color: AppColors.brandFill),
+            const SizedBox(width: 6),
+            Text(
+              'LOGO PETENG',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.brandFill,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

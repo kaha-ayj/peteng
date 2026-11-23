@@ -54,7 +54,12 @@ class _LandingPageState extends State<LandingPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Image.asset('lib/assets/images/logo.png', width: 180),
+              Image.asset(
+                AppColors.isDark
+                    ? 'lib/assets/images/logo_dark.png'
+                    : 'lib/assets/images/logo.png',
+                width: 180,
+              ),
               const SizedBox(height: 35),
             ],
           ),

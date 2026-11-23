@@ -13,6 +13,7 @@ import 'package:latlong2/latlong.dart';
 
 import 'home.dart' show AppColors, AppBottomNav;
 import '../theme/app_theme.dart';
+import '../services/berita_api.dart';
 import 'laporan_api.dart';
 import 'peta_rute.dart';
 import 'article_page.dart';
@@ -444,6 +445,14 @@ class _LaporPageState extends State<LaporPage> {
 
     switch (hasil.hasil) {
       case LaporanHasil.tersimpan:
+        await LaporanWargaStore.simpan(
+          id: hasil.idLaporan ?? '',
+          kategori: _kategori ?? 'Lainnya',
+          deskripsi: _keteranganC.text.trim(),
+          lokasi: _alamat ?? '',
+          tingkat: _tingkatDipilih,
+        );
+        if (!mounted) return;
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (_) => LaporanTerkirimPage(idLaporan: hasil.idLaporan),
@@ -1966,7 +1975,11 @@ class _LaporanTerkirimPageState extends State<LaporanTerkirimPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.cloud_done_outlined, size: 84, color: _cTerang),
+                const Icon(
+                  Icons.cloud_done_outlined,
+                  size: 84,
+                  color: _cTerang,
+                ),
                 const SizedBox(height: 18),
                 Text(
                   'Laporan Tersimpan',
