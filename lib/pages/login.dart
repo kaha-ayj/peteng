@@ -9,15 +9,6 @@ import 'package:peteng/theme/app_theme.dart';
 import 'home.dart';
 import 'sign_up.dart';
 import 'verify_email_page.dart';
-import 'verify_email_page.dart';
-
-class AppColors {
-  static const brand = Color(0xFF172554);
-  static const brandSoft = Color(0xFF46507A);
-  static const card = Color(0xFFF1F1EF);
-  static const muted = Color(0xFF5B6070);
-  static const glow = Color(0xFFE8D98A);
-}
 
 const String kLogoAsset = 'lib/assets/images/logo_bulet.png';
 
