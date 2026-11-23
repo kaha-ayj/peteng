@@ -54,21 +54,7 @@ class _LandingPageState extends State<LandingPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(36),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x14000000),
-                      blurRadius: 18,
-                      offset: Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Image.asset('lib/assets/images/logo.png', width: 180),
-              ),
+              Image.asset('lib/assets/images/logo.png', width: 180),
               const SizedBox(height: 35),
             ],
           ),

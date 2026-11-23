@@ -65,14 +65,7 @@ class _SplashScreenState extends State<SplashScreen>
           opacity: _fadeAnimation,
           child: ScaleTransition(
             scale: _scaleAnimation,
-            child: Container(
-              padding: const EdgeInsets.all(18),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
-              child: Image.asset('lib/assets/images/logo_aja.png', width: 84),
-            ),
+            child: Image.asset('lib/assets/images/logo_aja.png', width: 84),
           ),
         ),
       ),
